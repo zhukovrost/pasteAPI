@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS pastes_title_idx;

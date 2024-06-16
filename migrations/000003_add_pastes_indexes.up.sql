@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS pastes_title_idx ON pastes USING GIN (to_tsvector('simple', title));
