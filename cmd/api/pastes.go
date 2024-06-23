@@ -128,6 +128,14 @@ func (app *application) createPasteHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	if user := app.contextGetUser(r); !user.IsAnonymous() {
+		err = app.models.Permissions.SetWritePermission(user.ID, paste.Id)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+	}
+
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("api/v1/pastes/%d", paste.Id))
 

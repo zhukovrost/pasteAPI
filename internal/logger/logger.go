@@ -9,21 +9,21 @@ import (
 )
 
 var (
-	once   sync.Once
-	logger *logrus.Logger
+	once     sync.Once
+	MyLogger *logrus.Logger
 )
 
 func New(needDebug bool) *logrus.Logger {
 	once.Do(func() {
-		logger = logrus.New()
-		logger.SetFormatter(&CustomJSONFormatter{})
+		MyLogger = logrus.New()
+		MyLogger.SetFormatter(&CustomJSONFormatter{})
 		if needDebug {
-			logger.SetLevel(logrus.DebugLevel)
+			MyLogger.SetLevel(logrus.DebugLevel)
 		} else {
-			logger.SetLevel(logrus.InfoLevel)
+			MyLogger.SetLevel(logrus.InfoLevel)
 		}
 	})
-	return logger
+	return MyLogger
 }
 
 type CustomJSONFormatter struct{}

@@ -1,0 +1,36 @@
+{{ define "subject" }} Welcome to Paste! {{ end }}
+
+{{ define "plainBody" }}
+Hi, {{.Login}}
+
+Thanks for signing up for a Paste account. We're excited to have you on board!
+
+For future reference, your user ID number is {{.ID}}.
+
+Please, confirm your email. Your activation code is {{.activationCode}}.
+
+Thanks,
+
+The Paste Team
+{{ end }}
+
+{{ define "htmlBody" }}
+<!doctype html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+
+<body>
+    <p>Hi, <b>{{.Login}}</b></p>
+    <p>Thanks for signing up for a Paste account. We're excited to have you on board!</p>
+    <p>For future reference, your user ID number is {{.ID}}.</p>
+    <p>Please, confirm your email. <b>Your activation code is {{.activationCode}}</b>.</p>
+    <p>Thanks,</p>
+    <p>The Paste Team</p>
+</body>
+
+</html>
+{{ end }}

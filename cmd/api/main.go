@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
 	"github.com/sirupsen/logrus"
-	"net/http"
 	"os"
 	"pasteAPI/internal/data"
 	myLogger "pasteAPI/internal/logger"
+	"pasteAPI/internal/mailer"
+	"sync"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -26,12 +26,26 @@ type config struct {
 		maxIdleConns int
 		maxIdleTime  string
 	}
+	limiter struct {
+		rps     float64
+		burst   int
+		enabled bool
+	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 type application struct {
 	config config
-	logger *logrus.Logger
 	models data.Models
+	logger *logrus.Logger
+	mailer *mailer.Mailer
+	wg     sync.WaitGroup
 }
 
 func main() {
@@ -49,6 +63,16 @@ func main() {
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 10, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "10m", "PostgreSQL max connection idle time")
 
+	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "Rate limiter maximum requests per second")
+	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
+	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
+
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 2525, "SMTP port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", os.Getenv("MAILTRAP_USERNAME"), "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", os.Getenv("MAILTRAP_PASSWORD"), "SMTP password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Paste <no-reply@pasteAPI>", "SMTP sender")
+
 	flag.Parse()
 
 	logger := myLogger.New(needDebug)
@@ -65,24 +89,10 @@ func main() {
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
+		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 	}
 
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      app.newRouter(),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
-	}
-
-	logger.WithFields(map[string]interface{}{
-		"version": version,
-		"port":    cfg.port,
-		"env":     cfg.env,
-	}).Infof("starting server")
-
-	err = srv.ListenAndServe()
-	if err != nil {
+	if err = app.serve(); err != nil {
 		logger.Fatal(err)
 	}
 }
