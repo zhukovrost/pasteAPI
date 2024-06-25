@@ -6,17 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"pasteAPI/internal/repository/models"
-	"pasteAPI/internal/service"
 	"time"
 )
-
-type Pastes interface {
-	Create(p *models.Paste) error
-	Read(id uint16) (*models.Paste, error)
-	ReadAll(title string, category uint8, filters service.Filters) ([]*models.Paste, *service.Metadata, error)
-	Update(p *models.Paste) error
-	Delete(id uint16) error
-}
 
 type PasteModel struct {
 	DB *sql.DB
@@ -74,7 +65,7 @@ func (m *PasteModel) Read(id uint16) (*models.Paste, error) {
 	return &paste, nil
 }
 
-func (m *PasteModel) ReadAll(title string, category uint8, filters service.Filters) ([]*models.Paste, *service.Metadata, error) {
+func (m *PasteModel) ReadAll(title string, category uint8, filters models.Filters) ([]*models.Paste, *models.Metadata, error) {
 	query := fmt.Sprintf(`
 		SELECT COUNT(*) OVER(), id, title, category, text, created_at, expires_at, version 
 		FROM pastes 
@@ -89,7 +80,7 @@ func (m *PasteModel) ReadAll(title string, category uint8, filters service.Filte
 
 	rows, err := m.DB.QueryContext(ctx, query, title, category, filters.Limit(), filters.Offset())
 	if err != nil {
-		return nil, &service.Metadata{}, err
+		return nil, &models.Metadata{}, err
 	}
 
 	defer rows.Close()
@@ -111,17 +102,17 @@ func (m *PasteModel) ReadAll(title string, category uint8, filters service.Filte
 			&paste.Version,
 		)
 		if err != nil {
-			return nil, &service.Metadata{}, err
+			return nil, &models.Metadata{}, err
 		}
 
 		pastes = append(pastes, &paste)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, &service.Metadata{}, err
+		return nil, &models.Metadata{}, err
 	}
 
-	metadata := service.CalculateMetadata(totalRecords, filters.Page, filters.PageSize)
+	metadata := models.CalculateMetadata(totalRecords, filters.Page, filters.PageSize)
 
 	return pastes, &metadata, nil
 }

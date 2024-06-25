@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"pasteAPI/internal/auth"
-	"pasteAPI/internal/repository/models"
-	"pasteAPI/internal/service"
-
 	"pasteAPI/internal/repository"
+	"pasteAPI/internal/repository/models"
 	"pasteAPI/pkg/helpers"
 	"pasteAPI/pkg/validator"
 	"strings"
@@ -19,7 +17,7 @@ func (h *Handler) ListPastesHandler(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		Title    string
 		Category uint8
-		Filters  service.Filters
+		Filters  models.Filters
 	}
 
 	qs := r.URL.Query()
@@ -32,7 +30,7 @@ func (h *Handler) ListPastesHandler(w http.ResponseWriter, r *http.Request) {
 	in.Filters.PageSize = uint32(helpers.ReadInt(qs, "pageSize", 5, v))
 	in.Filters.SortSafelist = []string{"id", "-id", "title", "-title", "created_at", "-created_at", "expires_at", "-expires_at"}
 
-	service.ValidateFilters(v, in.Filters)
+	models.ValidateFilters(v, in.Filters)
 	if !v.Valid() {
 		h.FailedValidationResponse(w, r, v.Errors)
 		return
@@ -122,7 +120,7 @@ func (h *Handler) CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 
 	v := validator.New()
 	v.Check(paste.Minutes > 0, "minutes", "must be greater than zero")
-	if service.ValidatePaste(v, paste); !v.Valid() {
+	if models.ValidatePaste(v, paste); !v.Valid() {
 		h.FailedValidationResponse(w, r, v.Errors)
 		return
 	}
@@ -200,7 +198,7 @@ func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 	expiration := paste.ExpiresAt.Add(time.Duration(paste.Minutes) * time.Minute)
 	v.Check(expiration.After(paste.CreatedAt), "minutes", "paste can't be expired before creation")
 
-	if service.ValidatePaste(v, paste); !v.Valid() {
+	if models.ValidatePaste(v, paste); !v.Valid() {
 		h.FailedValidationResponse(w, r, v.Errors)
 		return
 	}

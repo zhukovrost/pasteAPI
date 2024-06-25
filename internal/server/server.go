@@ -25,6 +25,7 @@ func New(config *config.Config, handler *v1.Handler) *http.Server {
 	}
 }
 
+// Run function runs the server with a graceful shutdown
 func Run(server *http.Server, service *service.Service) error {
 	shutdownError := make(chan error)
 

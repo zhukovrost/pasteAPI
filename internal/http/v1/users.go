@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"pasteAPI/internal/repository"
 	"pasteAPI/internal/repository/models"
-	"pasteAPI/internal/service"
 	"pasteAPI/pkg/helpers"
 	"pasteAPI/pkg/validator"
 	"time"
@@ -38,7 +37,7 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	v := validator.New()
 
-	if service.ValidateUser(v, user); !v.Valid() {
+	if models.ValidateUser(v, user); !v.Valid() {
 		h.FailedValidationResponse(w, r, v.Errors)
 		return
 	}

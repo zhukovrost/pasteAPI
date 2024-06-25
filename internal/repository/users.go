@@ -14,13 +14,6 @@ var (
 	ErrDuplicate = errors.New("duplicate email or login")
 )
 
-type Users interface {
-	Create(u *models.User) error
-	GetByEmail(email string) (*models.User, error)
-	Update(u *models.User) error
-	GetForToken(tokenScope, tokenPlaintext string) (*models.User, error)
-}
-
 type UserModel struct {
 	DB *sql.DB
 }

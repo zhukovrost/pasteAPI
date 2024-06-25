@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"pasteAPI/internal/repository"
-	"pasteAPI/internal/service"
+	"pasteAPI/internal/repository/models"
 	"pasteAPI/pkg/helpers"
 	"pasteAPI/pkg/validator"
 	"time"
@@ -23,8 +23,8 @@ func (h *Handler) CreateAuthenticationTokenHandler(w http.ResponseWriter, r *htt
 	}
 
 	v := validator.New()
-	service.ValidateEmail(v, in.Email)
-	service.ValidatePasswordPlaintext(v, in.Password)
+	models.ValidateEmail(v, in.Email)
+	models.ValidatePasswordPlaintext(v, in.Password)
 	if !v.Valid() {
 		h.FailedValidationResponse(w, r, v.Errors)
 		return

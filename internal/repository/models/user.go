@@ -1,8 +1,7 @@
 package models
 
 import (
-	"errors"
-	"golang.org/x/crypto/bcrypt"
+	"pasteAPI/pkg/validator"
 	"time"
 )
 
@@ -18,34 +17,35 @@ type User struct {
 	Version   int       `json:"-"`
 }
 
-type password struct {
-	Plaintext *string
-	Hash      []byte
-}
-
-func (p *password) Set(plaintextPassword string) error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(plaintextPassword), 12)
-	if err != nil {
-		return err
-	}
-	p.Plaintext = &plaintextPassword
-	p.Hash = hash
-	return nil
-}
-
-func (p *password) Matches(plaintextPassword string) (bool, error) {
-	err := bcrypt.CompareHashAndPassword(p.Hash, []byte(plaintextPassword))
-	if err != nil {
-		switch {
-		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-			return false, nil
-		default:
-			return false, err
-		}
-	}
-	return true, nil
-}
-
 func (u *User) IsAnonymous() bool {
 	return u == AnonymousUser
+}
+
+func ValidateEmail(v *validator.Validator, email string) {
+	v.Check(email != "", "email", "must be provided")
+	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
+}
+
+func ValidatePasswordPlaintext(v *validator.Validator, password string) {
+	v.Check(password != "", "password", "must be provided")
+	v.Check(len(password) >= 8, "password", "must be at least 8 bytes long")
+	v.Check(len(password) <= 72, "password", "must not be more than 72 bytes long")
+}
+
+func ValidateLogin(v *validator.Validator, login string) {
+	v.Check(login != "", "login", "must be provided")
+	v.Check(validator.Matches(login, validator.LoginRX), "login", "contains incorrect symbols")
+}
+
+func ValidateUser(v *validator.Validator, user *User) {
+	ValidateLogin(v, user.Login)
+	ValidateEmail(v, user.Email)
+
+	if user.Password.Plaintext != nil {
+		ValidatePasswordPlaintext(v, *user.Password.Plaintext)
+	}
+
+	if user.Password.Hash == nil {
+		panic("missing password hash for user")
+	}
 }
