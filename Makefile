@@ -73,7 +73,7 @@ vendor:
 
 current_time = $(shell date --iso-8601=seconds)
 git_description = $(shell git describe --always --dirty --tags --long)
-linker_flags = '-s -X main.buildTime=${current_time} -X main.version=${git_description}'
+linker_flags = '-s -X pasteAPI/internal/config.BuildTime=${current_time} -X pasteAPI/internal/config.Version=${git_description}'
 
 ## build/api: build the cmd/api application
 .PHONY: build/api
@@ -82,3 +82,12 @@ build/api:
 	go build -ldflags=${linker_flags} -o=./bin/api ./cmd/api
 	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/api ./cmd/api
 	GOOS=windows GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/windows_amd64/api ./cmd/api
+
+# ==================================================================================== #
+# DOCS (SWAGGER)
+# ==================================================================================== #
+
+.PHONY: build/docs
+build/docs:
+	@echo 'Building docs'
+	swag init -g ./cmd/api/main.go

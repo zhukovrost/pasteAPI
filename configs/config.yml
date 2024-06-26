@@ -1,0 +1,17 @@
+addr: "localhost"
+port: 8080
+env: development
+db:
+  maxOpenConns: 30
+  maxIdleConns: 10
+  maxIdleTime: "10m"
+limiter:
+  rps: 4
+  burst: 8
+  enabled: true
+smtp:
+  host: "smtp.mailtrap.io"
+  port: 2525
+  sender: "Paste <no-reply@pasteAPI>"
+cors:
+  trustedOrigins: []

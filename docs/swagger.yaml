@@ -1,0 +1,488 @@
+definitions:
+  models.Metadata:
+    properties:
+      current_page:
+        type: integer
+      first_page:
+        type: integer
+      last_page:
+        type: integer
+      page_size:
+        type: integer
+      total_records:
+        type: integer
+    type: object
+  models.Paste:
+    properties:
+      category:
+        type: integer
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: integer
+      text:
+        type: string
+      title:
+        type: string
+      version:
+        type: integer
+    type: object
+  models.Token:
+    properties:
+      expiry:
+        type: string
+      token:
+        type: string
+    type: object
+  models.User:
+    properties:
+      activated:
+        type: boolean
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      login:
+        type: string
+    type: object
+  v1.ActivateUserInput:
+    properties:
+      token:
+        type: string
+    type: object
+  v1.AuthInput:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  v1.AuthResp:
+    properties:
+      authentication_token:
+        $ref: '#/definitions/models.Token'
+    type: object
+  v1.CreatePasteInput:
+    properties:
+      category:
+        type: integer
+      minutes:
+        type: integer
+      text:
+        type: string
+      title:
+        type: string
+    type: object
+  v1.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  v1.HealthCheckOutput:
+    properties:
+      status:
+        type: string
+      system_info:
+        properties:
+          environment:
+            type: string
+          version:
+            type: string
+        type: object
+    type: object
+  v1.ListPastesOutput:
+    properties:
+      metadata:
+        $ref: '#/definitions/models.Metadata'
+      pastes:
+        items:
+          $ref: '#/definitions/models.Paste'
+        type: array
+    type: object
+  v1.PasteResp:
+    properties:
+      paste:
+        $ref: '#/definitions/models.Paste'
+    type: object
+  v1.RegistrationInput:
+    properties:
+      email:
+        type: string
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  v1.UpdatePasteInput:
+    properties:
+      category:
+        type: integer
+      minutes:
+        type: integer
+      text:
+        type: string
+      title:
+        type: string
+    type: object
+  v1.UserResp:
+    properties:
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a Paste API server. It is used to publish, read, edit text
+    posts.
+  title: Paste API
+  version: "1.0"
+paths:
+  /api/v1/healthcheck:
+    get:
+      description: Retrieves status of the application
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved paste
+          schema:
+            $ref: '#/definitions/v1.HealthCheckOutput'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Health check
+      tags:
+      - app
+  /api/v1/pastes/:
+    get:
+      description: Retrieves a paste from the database by its ID.
+      parameters:
+      - description: Title of the paste
+        in: query
+        name: title
+        type: string
+      - description: Category ID of the paste
+        in: query
+        name: category
+        type: integer
+      - description: Sort order, e.g., -created_at
+        in: query
+        name: sort
+        type: string
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved paste
+          schema:
+            $ref: '#/definitions/v1.ListPastesOutput'
+        "422":
+          description: Unprocessing data
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Retrieve a paste
+      tags:
+      - pastes
+    post:
+      consumes:
+      - application/json
+      description: Creates a new paste in the database by input data.
+      parameters:
+      - description: Paste creation input
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreatePasteInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successfully created paste
+          schema:
+            $ref: '#/definitions/v1.PasteResp'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "422":
+          description: Unprocessable data
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Create a new paste
+      tags:
+      - pastes
+  /api/v1/pastes/{id}:
+    delete:
+      description: Deletes a paste from the database by its ID.
+      parameters:
+      - description: Paste ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Successfully deleted paste
+        "403":
+          description: User is not allowed to edit this paste
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "404":
+          description: Paste not found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Deletes a paste
+      tags:
+      - pastes
+    get:
+      description: Retrieves a paste from the database by its ID.
+      parameters:
+      - description: Paste ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved paste
+          schema:
+            $ref: '#/definitions/v1.PasteResp'
+        "404":
+          description: Paste not found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Retrieve a paste
+      tags:
+      - pastes
+    patch:
+      consumes:
+      - application/json
+      description: Updates the paste in the database by ID and input data.
+      parameters:
+      - description: Paste ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Paste update input
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/v1.UpdatePasteInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated paste
+          schema:
+            $ref: '#/definitions/v1.PasteResp'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "403":
+          description: User is not allowed to edit this paste
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "422":
+          description: Unprocessable data
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update the paste
+      tags:
+      - pastes
+  /api/v1/tokens/authentication:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user token in the database by input data.
+      parameters:
+      - description: User registration input
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.AuthInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successfully created
+          schema:
+            $ref: '#/definitions/v1.AuthResp'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "422":
+          description: Unprocessable data
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Authentication
+      tags:
+      - users
+      - tokens
+  /api/v1/users/:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user in the database by input data.
+      parameters:
+      - description: User registration input
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.RegistrationInput'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Successfully accepted
+          schema:
+            $ref: '#/definitions/v1.UserResp'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "422":
+          description: Unprocessable data
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Registration
+      tags:
+      - users
+  /api/v1/users/activated/:
+    put:
+      consumes:
+      - application/json
+      description: Activates the user by input token.
+      parameters:
+      - description: User activation input
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.ActivateUserInput'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Successfully accepted
+          schema:
+            $ref: '#/definitions/v1.UserResp'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "422":
+          description: Unprocessable data
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Activation
+      tags:
+      - users
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
