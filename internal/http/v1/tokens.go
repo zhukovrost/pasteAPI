@@ -32,6 +32,7 @@ type AuthResp struct {
 // @Failure      400  {object}  ErrorResponse "Bad request"
 // @Failure      401  {object}  ErrorResponse "Unauthorized"
 // @Failure      422  {object}  ErrorResponse "Unprocessable data"
+// @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
 // @Failure      500  {object}  ErrorResponse "Internal server error"
 // @Router       /api/v1/tokens/authentication [post]
 func (h *Handler) CreateAuthenticationTokenHandler(w http.ResponseWriter, r *http.Request) {

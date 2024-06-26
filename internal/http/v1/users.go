@@ -31,6 +31,7 @@ type UserResp struct {
 // @Success      202  {object}  UserResp  "Successfully accepted"
 // @Failure      400  {object}  ErrorResponse "Bad request"
 // @Failure      422  {object}  ErrorResponse "Unprocessable data"
+// @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
 // @Failure      500  {object}  ErrorResponse "Internal server error"
 // @Router       /api/v1/users/ [post]
 func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -112,6 +113,7 @@ type ActivateUserInput struct {
 // @Success      202  {object}  UserResp  "Successfully accepted"
 // @Failure      400  {object}  ErrorResponse "Bad request"
 // @Failure      422  {object}  ErrorResponse "Unprocessable data"
+// @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
 // @Failure      500  {object}  ErrorResponse "Internal server error"
 // @Router       /api/v1/users/activated/ [put]
 func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {

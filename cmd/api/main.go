@@ -13,6 +13,9 @@ import (
 // @version 1.0
 // @description This is a Paste API server. It is used to publish, read, edit text posts.
 // @host localhost:8080
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
 func main() {
 	cfg, err := config.New()
 

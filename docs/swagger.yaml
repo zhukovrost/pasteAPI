@@ -151,6 +151,10 @@ paths:
           description: Successfully retrieved paste
           schema:
             $ref: '#/definitions/v1.HealthCheckOutput'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -193,6 +197,10 @@ paths:
           description: Unprocessing data
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -226,6 +234,10 @@ paths:
           description: Unprocessable data
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -247,14 +259,24 @@ paths:
       responses:
         "204":
           description: Successfully deleted paste
+        "403":
+          description: User is not allowed to edit this paste
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
         "404":
           description: Paste not found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
+      security:
+      - Bearer: []
       summary: Deletes a paste
       tags:
       - pastes
@@ -275,6 +297,10 @@ paths:
             $ref: '#/definitions/v1.PasteResp'
         "404":
           description: Paste not found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
         "500":
@@ -310,6 +336,10 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
+        "403":
+          description: User is not allowed to edit this paste
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
         "404":
           description: Not found
           schema:
@@ -318,10 +348,16 @@ paths:
           description: Unprocessable data
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
+      security:
+      - Bearer: []
       summary: Update the paste
       tags:
       - pastes
@@ -354,6 +390,10 @@ paths:
             $ref: '#/definitions/v1.ErrorResponse'
         "422":
           description: Unprocessable data
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
         "500":
@@ -391,6 +431,10 @@ paths:
           description: Unprocessable data
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -425,6 +469,10 @@ paths:
           description: Unprocessable data
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
         "500":
           description: Internal server error
           schema:
@@ -432,4 +480,9 @@ paths:
       summary: Activation
       tags:
       - users
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

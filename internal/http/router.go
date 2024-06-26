@@ -22,7 +22,7 @@ func NewRouter(handler *v1.Handler) http.Handler {
 
 		r.Route("/pastes", func(r chi.Router) {
 			r.Get("/", handler.ListPastesHandler)
-			r.Post("/", handler.RequireActivatedUser(handler.CreatePasteHandler))
+			r.Post("/", handler.CreatePasteHandler)
 
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", handler.GetPasteHandler)

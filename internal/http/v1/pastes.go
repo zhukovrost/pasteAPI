@@ -37,6 +37,7 @@ type ListPastesOutput struct {
 // @Param        pageSize  query    int     false  "Number of items per page"
 // @Success      200  {object}  ListPastesOutput  "Successfully retrieved paste"
 // @Failure      422  {object}  ErrorResponse "Unprocessing data"
+// @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
 // @Failure      500  {object}  ErrorResponse "Internal server error"
 // @Router       /api/v1/pastes/ [get]
 func (h *Handler) ListPastesHandler(w http.ResponseWriter, r *http.Request) {
@@ -83,6 +84,7 @@ type PasteResp struct {
 // @Param        id   path   int   true       "Paste ID"
 // @Success      200  {object}  PasteResp  "Successfully retrieved paste"
 // @Failure      404  {object}  ErrorResponse "Paste not found"
+// @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
 // @Failure      500  {object}  ErrorResponse "Internal server error"
 // @Router       /api/v1/pastes/{id} [get]
 func (h *Handler) GetPasteHandler(w http.ResponseWriter, r *http.Request) {
@@ -115,9 +117,12 @@ func (h *Handler) GetPasteHandler(w http.ResponseWriter, r *http.Request) {
 // @Description  Deletes a paste from the database by its ID.
 // @Tags         pastes
 // @Produce      json
+// @Security Bearer
 // @Param        id   path     int   true   "Paste ID"
 // @Success      204  "Successfully deleted paste"
+// @Failure      403  {object}  ErrorResponse "User is not allowed to edit this paste"
 // @Failure      404  {object} ErrorResponse "Paste not found"
+// @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
 // @Failure      500  {object} ErrorResponse "Internal server error"
 // @Router       /api/v1/pastes/{id} [delete]
 func (h *Handler) DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
@@ -162,6 +167,7 @@ type CreatePasteInput struct {
 // @Success      201  {object}  PasteResp  "Successfully created paste"
 // @Failure      400  {object}  ErrorResponse "Bad request"
 // @Failure      422  {object}  ErrorResponse "Unprocessable data"
+// @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
 // @Failure      500  {object}  ErrorResponse "Internal server error"
 // @Router       /api/v1/pastes/ [post]
 func (h *Handler) CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
@@ -227,10 +233,13 @@ type UpdatePasteInput struct {
 // @Produce      json
 // @Param        id   path     int   true   "Paste ID"
 // @Param        body  body     UpdatePasteInput  false  "Paste update input"
+// @Security Bearer
 // @Success      200  {object}  PasteResp  "Successfully updated paste"
 // @Failure      400  {object}  ErrorResponse "Bad request"
+// @Failure      403  {object}  ErrorResponse "User is not allowed to edit this paste"
 // @Failure      404  {object}  ErrorResponse "Not found"
 // @Failure      422  {object}  ErrorResponse "Unprocessable data"
+// @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
 // @Failure      500  {object}  ErrorResponse "Internal server error"
 // @Router       /api/v1/pastes/{id} [patch]
 func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {

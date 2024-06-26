@@ -21,6 +21,7 @@ type HealthCheckOutput struct {
 // @Tags         app
 // @Produce      json
 // @Success      200  {object}  HealthCheckOutput  "Successfully retrieved paste"
+// @Failure 429 {object} v1.ErrorResponse "Too many requests, rate limit exceeded"
 // @Failure      500  {object}  ErrorResponse "Internal server error"
 // @Router       /api/v1/healthcheck [get]
 func (h *Handler) HealthcheckHandler(w http.ResponseWriter, r *http.Request) {
