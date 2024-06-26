@@ -10,13 +10,31 @@ import (
 	"time"
 )
 
+type RegistrationInput struct {
+	Login    string `json:"login"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type UserResp struct {
+	U *models.User `json:"user"`
+}
+
+// RegisterUserHandler creates a new user by input data
+//
+// @Summary      Registration
+// @Description  Creates a new user in the database by input data.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        body  body     RegistrationInput  true  "User registration input"
+// @Success      202  {object}  UserResp  "Successfully accepted"
+// @Failure      400  {object}  ErrorResponse "Bad request"
+// @Failure      422  {object}  ErrorResponse "Unprocessable data"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/users/ [post]
 func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
-	// Create an anonymous struct to hold the expected repository from the request body.
-	var input struct {
-		Login    string `json:"login"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+	var input RegistrationInput
 
 	err := helpers.ReadJSON(w, r, &input)
 	if err != nil {
@@ -79,10 +97,25 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type ActivateUserInput struct {
+	TokenPlainText string `json:"token"`
+}
+
+// ActivateUserHandler activates the user by input token
+//
+// @Summary      Activation
+// @Description  Activates the user by input token.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        body  body     ActivateUserInput  true  "User activation input"
+// @Success      202  {object}  UserResp  "Successfully accepted"
+// @Failure      400  {object}  ErrorResponse "Bad request"
+// @Failure      422  {object}  ErrorResponse "Unprocessable data"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/users/activated/ [put]
 func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
-	var in struct {
-		TokenPlainText string `json:"token"`
-	}
+	var in ActivateUserInput
 
 	err := helpers.ReadJSON(w, r, &in)
 	if err != nil {

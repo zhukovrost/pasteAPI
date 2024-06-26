@@ -4,10 +4,15 @@ import (
 	"errors"
 	"log"
 	"os"
+	_ "pasteAPI/docs"
 	"pasteAPI/internal/app"
 	"pasteAPI/internal/config"
 )
 
+// @title Paste API
+// @version 1.0
+// @description This is a Paste API server. It is used to publish, read, edit text posts.
+// @host localhost:8080
 func main() {
 	cfg, err := config.New()
 

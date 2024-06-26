@@ -12,6 +12,7 @@ import (
 var (
 	BuildTime         string
 	Version           string
+	NeedDebug         bool
 	ErrDisplayAndExit = errors.New("display Version and exit")
 )
 
@@ -89,6 +90,8 @@ func processFlags(cfg *Config) error {
 	flag.StringVar(&cfg.SMTP.Username, "smtp-username", cfg.SMTP.Username, "SMTP username")
 	flag.StringVar(&cfg.SMTP.Password, "smtp-password", cfg.SMTP.Password, "SMTP password")
 	flag.StringVar(&cfg.SMTP.Sender, "smtp-sender", cfg.SMTP.Sender, "SMTP sender")
+
+	flag.BoolVar(&NeedDebug, "debug", false, "turns on debug level (log)")
 
 	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
 		cfg.CORS.TrustedOrigins = strings.Fields(val)

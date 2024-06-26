@@ -6,6 +6,12 @@ import (
 	"pasteAPI/pkg/helpers"
 )
 
+// ErrorResponse is the typical error response.
+// This structure is used for swagger documentation.
+type ErrorResponse struct {
+	R string `json:"error"`
+}
+
 func (h *Handler) LogError(r *http.Request, err error) {
 	h.service.Logger.WithFields(map[string]interface{}{
 		"request_method": r.Method,

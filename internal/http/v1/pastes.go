@@ -13,12 +13,34 @@ import (
 	"time"
 )
 
+type SearchSettings struct {
+	Title    string
+	Category uint8
+	Filters  models.Filters
+}
+
+type ListPastesOutput struct {
+	Pastes   []*models.Paste  `json:"pastes"`
+	Metadata *models.Metadata `json:"metadata"`
+}
+
+// ListPastesHandler retrieves a paste by its ID
+//
+// @Summary      Retrieve a paste
+// @Description  Retrieves a paste from the database by its ID.
+// @Tags         pastes
+// @Produce      json
+// @Param        title     query    string  false  "Title of the paste"
+// @Param        category  query    int     false  "Category ID of the paste"
+// @Param        sort      query    string  false  "Sort order, e.g., -created_at"
+// @Param        page      query    int     false  "Page number for pagination"
+// @Param        pageSize  query    int     false  "Number of items per page"
+// @Success      200  {object}  ListPastesOutput  "Successfully retrieved paste"
+// @Failure      422  {object}  ErrorResponse "Unprocessing data"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/pastes/ [get]
 func (h *Handler) ListPastesHandler(w http.ResponseWriter, r *http.Request) {
-	var in struct {
-		Title    string
-		Category uint8
-		Filters  models.Filters
-	}
+	var in SearchSettings
 
 	qs := r.URL.Query()
 	in.Title = helpers.ReadString(qs, "title", "")
@@ -48,6 +70,21 @@ func (h *Handler) ListPastesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type PasteResp struct {
+	R *models.Paste `json:"paste"`
+}
+
+// GetPasteHandler retrieves a paste by its ID
+//
+// @Summary      Retrieve a paste
+// @Description  Retrieves a paste from the database by its ID.
+// @Tags         pastes
+// @Produce      json
+// @Param        id   path   int   true       "Paste ID"
+// @Success      200  {object}  PasteResp  "Successfully retrieved paste"
+// @Failure      404  {object}  ErrorResponse "Paste not found"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/pastes/{id} [get]
 func (h *Handler) GetPasteHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := helpers.ReadIDParam(r)
 	if err != nil {
@@ -72,6 +109,17 @@ func (h *Handler) GetPasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// DeletePasteHandler deletes a paste by its ID
+//
+// @Summary      Deletes a paste
+// @Description  Deletes a paste from the database by its ID.
+// @Tags         pastes
+// @Produce      json
+// @Param        id   path     int   true   "Paste ID"
+// @Success      204  "Successfully deleted paste"
+// @Failure      404  {object} ErrorResponse "Paste not found"
+// @Failure      500  {object} ErrorResponse "Internal server error"
+// @Router       /api/v1/pastes/{id} [delete]
 func (h *Handler) DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := helpers.ReadIDParam(r)
 	if err != nil {
@@ -96,13 +144,28 @@ func (h *Handler) DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type CreatePasteInput struct {
+	Title    string `json:"title"`
+	Category uint8  `json:"category,omitempty"`
+	Text     string `json:"text"`
+	Minutes  int32  `json:"minutes"`
+}
+
+// CreatePasteHandler creates a new paste by input data
+//
+// @Summary      Create a new paste
+// @Description  Creates a new paste in the database by input data.
+// @Tags         pastes
+// @Accept       json
+// @Produce      json
+// @Param        body  body     CreatePasteInput  true  "Paste creation input"
+// @Success      201  {object}  PasteResp  "Successfully created paste"
+// @Failure      400  {object}  ErrorResponse "Bad request"
+// @Failure      422  {object}  ErrorResponse "Unprocessable data"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/pastes/ [post]
 func (h *Handler) CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
-	var in struct {
-		Title    string `json:"title"`
-		Category uint8  `json:"category,omitempty"`
-		Text     string `json:"text"`
-		Minutes  int32  `json:"minutes"`
-	}
+	var in CreatePasteInput
 
 	err := helpers.ReadJSON(w, r, &in)
 	if err != nil {
@@ -148,6 +211,28 @@ func (h *Handler) CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type UpdatePasteInput struct {
+	Title    *string `json:"title"`
+	Category *uint8  `json:"category,omitempty"`
+	Text     *string `json:"text"`
+	Minutes  *int32  `json:"minutes"`
+}
+
+// UpdatePasteHandler updates a new paste by ID and input data
+//
+// @Summary      Update the paste
+// @Description  Updates the paste in the database by ID and input data.
+// @Tags         pastes
+// @Accept       json
+// @Produce      json
+// @Param        id   path     int   true   "Paste ID"
+// @Param        body  body     UpdatePasteInput  false  "Paste update input"
+// @Success      200  {object}  PasteResp  "Successfully updated paste"
+// @Failure      400  {object}  ErrorResponse "Bad request"
+// @Failure      404  {object}  ErrorResponse "Not found"
+// @Failure      422  {object}  ErrorResponse "Unprocessable data"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/pastes/{id} [patch]
 func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := helpers.ReadIDParam(r)
 	if err != nil {
@@ -166,12 +251,7 @@ func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var in struct {
-		Title    *string `json:"title"`
-		Category *uint8  `json:"category,omitempty"`
-		Text     *string `json:"text"`
-		Minutes  *int32  `json:"minutes"`
-	}
+	var in UpdatePasteInput
 
 	err = helpers.ReadJSON(w, r, &in)
 	if err != nil {

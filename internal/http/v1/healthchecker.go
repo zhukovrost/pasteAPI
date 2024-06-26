@@ -6,6 +6,23 @@ import (
 	"pasteAPI/pkg/helpers"
 )
 
+type HealthCheckOutput struct {
+	S string `json:"status"`
+	I struct {
+		E string `json:"environment"`
+		V string `json:"version"`
+	} `json:"system_info"`
+}
+
+// HealthcheckHandler retrieves status of the application
+//
+// @Summary      Health check
+// @Description  Retrieves status of the application
+// @Tags         app
+// @Produce      json
+// @Success      200  {object}  HealthCheckOutput  "Successfully retrieved paste"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/healthcheck [get]
 func (h *Handler) HealthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	env := helpers.Envelope{
 		"status": "development",

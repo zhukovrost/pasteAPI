@@ -82,3 +82,12 @@ build/api:
 	go build -ldflags=${linker_flags} -o=./bin/api ./cmd/api
 	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/api ./cmd/api
 	GOOS=windows GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/windows_amd64/api ./cmd/api
+
+# ==================================================================================== #
+# DOCS (SWAGGER)
+# ==================================================================================== #
+
+.PHONY: build/docs
+build/docs:
+	@echo 'Building docs'
+	swag init -g ./cmd/api/main.go

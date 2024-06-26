@@ -1,3 +1,4 @@
+addr: "localhost"
 port: 8080
 env: development
 db:
@@ -5,8 +6,8 @@ db:
   maxIdleConns: 10
   maxIdleTime: "10m"
 limiter:
-  rps: 2
-  burst: 4
+  rps: 4
+  burst: 8
   enabled: true
 smtp:
   host: "smtp.mailtrap.io"

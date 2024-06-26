@@ -10,11 +10,32 @@ import (
 	"time"
 )
 
+type AuthInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type AuthResp struct {
+	*models.Token `json:"authentication_token"`
+}
+
+// CreateAuthenticationTokenHandler creates a new authentication token by input data
+//
+// @Summary      Authentication
+// @Description  Creates a new user token in the database by input data.
+// @Tags         users
+// @Tags         tokens
+// @Accept       json
+// @Produce      json
+// @Param        body  body     AuthInput  true  "User registration input"
+// @Success      201  {object}  AuthResp  "Successfully created"
+// @Failure      400  {object}  ErrorResponse "Bad request"
+// @Failure      401  {object}  ErrorResponse "Unauthorized"
+// @Failure      422  {object}  ErrorResponse "Unprocessable data"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/tokens/authentication [post]
 func (h *Handler) CreateAuthenticationTokenHandler(w http.ResponseWriter, r *http.Request) {
-	var in struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+	var in AuthInput
 
 	err := helpers.ReadJSON(w, r, &in)
 	if err != nil {

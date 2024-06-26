@@ -1,7 +1,6 @@
 package app
 
 import (
-	"flag"
 	"pasteAPI/internal/config"
 	"pasteAPI/internal/http/v1"
 	"pasteAPI/internal/metrics"
@@ -14,11 +13,7 @@ import (
 )
 
 func Run(cfg *config.Config) {
-	var needDebug bool
-	flag.BoolVar(&needDebug, "debug", false, "turns on debug level (log)")
-	flag.Parse()
-
-	log := logger.New(needDebug)
+	log := logger.New(config.NeedDebug)
 
 	mailer := mailer.New(cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password, cfg.SMTP.Sender)
 
