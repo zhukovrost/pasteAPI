@@ -1,0 +1,27 @@
+services:
+  app:
+    image: pasteapi:local
+    container_name: ps-backend
+    ports:
+      - "127.0.0.1:8080:30000"
+    depends_on:
+      - postgresql
+    networks:
+      - ps
+
+  postgresql:
+    image: postgres:14-alpine
+    container_name: ps-postgresql
+    ports:
+      - "127.0.0.1:25432:5432"
+    environment:
+      - POSTGRES_DB=paste
+      - POSTGRES_USER=pasteadmin
+      - POSTGRES_PASSWORD=admin
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    networks:
+      - ps
+
+networks:
+  ps:
