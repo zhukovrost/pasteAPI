@@ -20,7 +20,7 @@ type Config struct {
 	Port int    `yaml:"port"`
 	Env  string `yaml:"env"`
 	DB   struct {
-		DSN          string `envconfig:"PASTE_DB_DSN"`
+		DSN          string `yaml:"dsn" envconfig:"PASTE_DB_DSN"`
 		MaxOpenConns int    `yaml:"maxOpenConns"`
 		MaxIdleConns int    `yaml:"maxIdleConns"`
 		MaxIdleTime  string `yaml:"maxIdleTime"`
@@ -33,12 +33,12 @@ type Config struct {
 	SMTP struct {
 		Host     string `yaml:"host"`
 		Port     int    `yaml:"port"`
-		Username string `envconfig:"PASTE_SMTP_USER"`
+		Username string `yaml:"user" envconfig:"PASTE_SMTP_USER"`
 		Password string `envconfig:"PASTE_SMTP_PASSWORD"`
 		Sender   string `yaml:"sender"`
 	} `yaml:"smtp"`
 	CORS struct {
-		TrustedOrigins []string `yaml:"trustedOrigins"`
+		TrustedOrigins []string `yaml:"trustedOrigins" envconfig:"TRUSTED_ORIGINS"`
 	} `yaml:"cors"`
 }
 

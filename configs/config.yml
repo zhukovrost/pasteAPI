@@ -5,6 +5,7 @@ db:
   maxOpenConns: 30
   maxIdleConns: 10
   maxIdleTime: "10m"
+  dsn: "<DSN>"
 limiter:
   rps: 4
   burst: 8
@@ -12,6 +13,8 @@ limiter:
 smtp:
   host: "smtp.mailtrap.io"
   port: 2525
+  user: "179f53d6893b87"
   sender: "Paste <no-reply@pasteAPI>"
+  password: "<PASSWORD>"
 cors:
   trustedOrigins: []

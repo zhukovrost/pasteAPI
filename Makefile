@@ -1,5 +1,5 @@
 # Include variables from the .envrc file
-include .envrc
+include .env
 
 # ==================================================================================== #
 # HELPERS
@@ -21,7 +21,7 @@ confirm:
 ## run/api: run the cmd/api application
 .PHONY: run/api
 run/api:
-	@go run ./cmd/api -db-dsn=${PASTE_DB_DSN} -smtp-username=${PASTE_SMTP_USER} -smtp-password=${PASTE_SMTP_PASSWORD}
+	@go run ./cmd/api -db-dsn=${PASTE_DB_DSN} -smtp-password=${PASTE_SMTP_PASSWORD}
 
 ## db/psql: connect to the database using psql
 .PHONY: db/psql
@@ -82,6 +82,11 @@ build/api:
 	go build -ldflags=${linker_flags} -o=./bin/api ./cmd/api
 	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/api ./cmd/api
 	GOOS=windows GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/windows_amd64/api ./cmd/api
+
+.PHONY: build/container
+build/container:
+	@echo 'Building container...'
+	docker compose up --build
 
 # ==================================================================================== #
 # DOCS (SWAGGER)
