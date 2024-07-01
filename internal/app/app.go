@@ -4,12 +4,12 @@ import (
 	"pasteAPI/internal/config"
 	"pasteAPI/internal/http/v1"
 	"pasteAPI/internal/metrics"
-	"pasteAPI/internal/postgres"
 	"pasteAPI/internal/repository"
 	"pasteAPI/internal/server"
 	"pasteAPI/internal/service"
 	"pasteAPI/pkg/logger"
 	"pasteAPI/pkg/mailer"
+	"pasteAPI/pkg/postgres"
 )
 
 func Run(cfg *config.Config) {
@@ -17,7 +17,7 @@ func Run(cfg *config.Config) {
 
 	mailer := mailer.New(cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password, cfg.SMTP.Sender)
 
-	db, err := postgres.OpenDB(cfg)
+	db, err := postgres.OpenDB(cfg.DB.DSN, cfg.DB.MaxIdleTime, cfg.DB.MaxOpenConns, cfg.DB.MaxIdleConns)
 	if err != nil {
 		log.Fatal(err)
 	}

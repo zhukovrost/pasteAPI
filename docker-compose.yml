@@ -1,27 +1,86 @@
+version: "3.8"
 services:
-  app:
-    image: pasteapi:local
-    container_name: ps-backend
+  api:
+    image: pasteapi:latest
+    env_file: .env
     ports:
-      - "127.0.0.1:8080:30000"
+      - '8080:8080'
     depends_on:
-      - postgresql
-    networks:
-      - ps
+      postgres:
+        condition: service_healthy
+#      rabbitmq:
+#        condition: service_healthy
+    restart: unless-stopped
 
-  postgresql:
-    image: postgres:14-alpine
-    container_name: ps-postgresql
-    ports:
-      - "127.0.0.1:25432:5432"
+#  email-sender:
+#    image: allbyk/task-traker-email-sender:latest
+#    restart: unless-stopped
+#    env_file: .env
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      rabbitmq:
+#        condition: service_healthy
+#  scheduler:
+#    image: allbyk/scheduler:latest
+#    restart: unless-stopped
+#    env_file: .env
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      rabbitmq:
+#        condition: service_healthy
+#  rabbitmq:
+#    image: rabbitmq:3-management-alpine
+#    container_name: 'rabbitmq'
+#    ports:
+#      - 5672:5672
+#      - 15672:15672
+#    healthcheck:
+#      test: ["CMD", "rabbitmqctl", "node_health_check"]
+#      interval: 30s
+#      retries: 3
+#      timeout: 10s
+  postgres:
+    image: postgres:latest
+    env_file: .env
     environment:
-      - POSTGRES_DB=paste
-      - POSTGRES_USER=pasteadmin
-      - POSTGRES_PASSWORD=admin
+      POSTGRES_DB: paste
+      POSTGRES_HOST_AUTH_METHOD: md5
+      POSTGRES_EXTRA_OPTS: '-c listen_addresses=localhost -с ssl=off'
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
-      - ./data:/var/lib/postgresql/data
-    networks:
-      - ps
+      - postgres:/var/lib/postgresql/data
+    restart: unless-stopped
 
-networks:
-  ps:
+
+#  front:
+#    image: frontpaste:latest
+#    restart: unless-stopped
+#    ports:
+#      - "3000:3000"
+#    volumes:
+#      - /app/node_modules
+#      - /app/.next
+#    depends_on:
+#      - api
+
+  migrate:
+    image: migrate/migrate
+    env_file: .env
+    volumes:
+      - ./migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:5432/paste?sslmode=disable", "up"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+volumes:
+  postgres: 

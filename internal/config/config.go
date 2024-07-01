@@ -3,9 +3,10 @@ package config
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"github.com/kelseyhightower/envconfig"
 	"gopkg.in/yaml.v3"
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -17,47 +18,42 @@ var (
 )
 
 type Config struct {
-	Port int    `yaml:"port"`
-	Env  string `yaml:"env"`
-	DB   struct {
+	Port   int    `yaml:"port" envconfig:"PORT"`
+	Env    string `yaml:"env" envconfig:"ENVIRONMENT"`
+	Status string `yaml:"status" envconfig:"STATUS"`
+	DB     struct {
 		DSN          string `yaml:"dsn" envconfig:"PASTE_DB_DSN"`
-		MaxOpenConns int    `yaml:"maxOpenConns"`
-		MaxIdleConns int    `yaml:"maxIdleConns"`
-		MaxIdleTime  string `yaml:"maxIdleTime"`
+		MaxOpenConns int    `yaml:"maxOpenConns" envconfig:"PASTE_DB_MAX_OPEN_CONNECTIONS"`
+		MaxIdleConns int    `yaml:"maxIdleConns" envconfig:"PASTE_DB_MAX_IDLE_CONNECTIONS"`
+		MaxIdleTime  string `yaml:"maxIdleTime" envconfig:"PASTE_DB_MAX_IDLE_TIME"`
 	} `yaml:"db"`
 	Limiter struct {
-		RPS     float64 `yaml:"rps"`
-		Burst   int     `yaml:"burst"`
-		Enabled bool    `yaml:"enabled"`
+		RPS     float64 `yaml:"rps" envconfig:"API_LIMIT_RPS"`
+		Burst   int     `yaml:"burst" envconfig:"API_LIMIT_BURST"`
+		Enabled bool    `yaml:"enabled" envconfig:"API_LIMIT_ENABLED"`
 	} `yaml:"limiter"`
 	SMTP struct {
-		Host     string `yaml:"host"`
-		Port     int    `yaml:"port"`
+		Host     string `yaml:"host" envconfig:"PASTE_SMTP_HOST"`
+		Port     int    `yaml:"port" envconfig:"PASTE_SMTP_PORT"`
 		Username string `yaml:"user" envconfig:"PASTE_SMTP_USER"`
-		Password string `envconfig:"PASTE_SMTP_PASSWORD"`
-		Sender   string `yaml:"sender"`
+		Password string `yaml:"password" envconfig:"PASTE_SMTP_PASSWORD"`
+		Sender   string `yaml:"sender" envconfig:"PASTE_SMTP_SENDER"`
 	} `yaml:"smtp"`
 	CORS struct {
-		TrustedOrigins []string `yaml:"trustedOrigins" envconfig:"TRUSTED_ORIGINS"`
+		TrustedOrigins []string `yaml:"trustedOrigins" envconfig:"PASTE_TRUSTED_ORIGINS"`
 	} `yaml:"cors"`
 }
 
 func New() (*Config, error) {
 	var cfg Config
 
-	err := loadConfig("configs/config.yml", &cfg)
-	if err != nil {
+	if err := loadConfig("configs/config.yml", &cfg); err != nil {
 		return nil, err
 	}
-
-	// Load configuration from environment variables
-	err = envconfig.Process("", &cfg)
-	if err != nil {
+	if err := processEnvironment(&cfg); err != nil {
 		return nil, err
 	}
-
-	err = processFlags(&cfg)
-	if err != nil {
+	if err := processFlags(&cfg); err != nil {
 		return nil, err
 	}
 
@@ -65,11 +61,25 @@ func New() (*Config, error) {
 }
 
 func loadConfig(filename string, cfg *Config) error {
-	data, err := ioutil.ReadFile(filename)
+	file, err := os.Open(filename)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open config file %s: %w", filename, err)
 	}
-	return yaml.Unmarshal(data, cfg)
+	defer file.Close()
+
+	decoder := yaml.NewDecoder(file)
+	if err := decoder.Decode(cfg); err != nil {
+		return fmt.Errorf("failed to decode YAML from config file %s: %w", filename, err)
+	}
+
+	return nil
+}
+
+func processEnvironment(cfg *Config) error {
+	if err := envconfig.Process("", cfg); err != nil {
+		return fmt.Errorf("failed to process environment variables: %w", err)
+	}
+	return nil
 }
 
 func processFlags(cfg *Config) error {

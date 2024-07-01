@@ -46,7 +46,7 @@ db/migrations/new: confirm
 
 ## audit: tidy dependencies and format, vet and test all code
 .PHONY: audit
-audit: vendor
+audit: # vendor
 	@echo 'Tidying and verifying module dependencies...'
 	go mod tidy
 	go mod verify
@@ -73,20 +73,30 @@ vendor:
 
 current_time = $(shell date --iso-8601=seconds)
 git_description = $(shell git describe --always --dirty --tags --long)
-linker_flags = '-s -X pasteAPI/internal/config.BuildTime=${current_time} -X pasteAPI/internal/config.Version=${git_description}'
+linker_flags = '-s -X pasteAPI/internal/config.Version=${git_description}'
+# linker_flags = '-s -X pasteAPI/internal/config.BuildTime=${current_time} -X pasteAPI/internal/config.Version=${git_description}'
 
 ## build/api: build the cmd/api application
 .PHONY: build/api
 build/api:
 	@echo 'Building cmd/api...'
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 	go build -ldflags=${linker_flags} -o=./bin/api ./cmd/api
-	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/api ./cmd/api
-	GOOS=windows GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/windows_amd64/api ./cmd/api
+
+.PHONY: build/recompose
+build/recompose:
+	@echo 'Composing down...'
+	docker compose down
+	@echo 'Building container...'
+	make build/container
+	@echo 'Composing up...'
+	docker compose up
 
 .PHONY: build/container
 build/container:
 	@echo 'Building container...'
-	docker compose up --build
+	docker rmi pasteapi
+	docker build -t pasteapi .
 
 # ==================================================================================== #
 # DOCS (SWAGGER)

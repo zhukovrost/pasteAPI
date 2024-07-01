@@ -3,27 +3,26 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"pasteAPI/internal/config"
 	"time"
 
 	_ "github.com/lib/pq"
 )
 
 // OpenDB function returns a sql.DB connection pool.
-func OpenDB(cfg *config.Config) (*sql.DB, error) {
-	db, err := sql.Open("postgres", cfg.DB.DSN)
+func OpenDB(dsn, maxIdleTime string, maxOpenConns, maxIdleConns int) (*sql.DB, error) {
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	duration, err := time.ParseDuration(cfg.DB.MaxIdleTime)
+	duration, err := time.ParseDuration(maxIdleTime)
 	if err != nil {
 		return nil, err
 	}
 
 	db.SetConnMaxIdleTime(duration)
-	db.SetMaxOpenConns(cfg.DB.MaxOpenConns)
-	db.SetMaxIdleConns(cfg.DB.MaxIdleConns)
+	db.SetMaxOpenConns(maxOpenConns)
+	db.SetMaxIdleConns(maxIdleConns)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

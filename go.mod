@@ -5,7 +5,6 @@ go 1.22
 require (
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-mail/mail v2.3.1+incompatible
-	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/sirupsen/logrus v1.9.3
 	github.com/swaggo/swag v1.16.3
@@ -13,6 +12,8 @@ require (
 	golang.org/x/time v0.5.0
 	gopkg.in/yaml.v3 v3.0.1
 )
+
+require github.com/kelseyhightower/envconfig v1.4.0
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
