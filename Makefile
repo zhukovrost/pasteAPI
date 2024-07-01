@@ -2,6 +2,16 @@
 include .env
 
 # ==================================================================================== #
+# RUN
+# ==================================================================================== #
+
+## run/api: run the application
+.PHONY: run/api
+run/api:
+	@echo 'Running app...'
+	docker compose up
+
+# ==================================================================================== #
 # HELPERS
 # ==================================================================================== #
 
@@ -18,23 +28,23 @@ confirm:
 # DEVELOPMENT
 # ==================================================================================== #
 
-## run/api: run the cmd/api application
-.PHONY: run/api
-run/api:
+## dev/run/api: run the cmd/api application (development only)
+.PHONY: dev/run/api
+dev/run/api:
 	@go run ./cmd/api -db-dsn=${PASTE_DB_DSN} -smtp-password=${PASTE_SMTP_PASSWORD}
 
-## db/psql: connect to the database using psql
+## db/psql: connect to the database using psql (development only)
 .PHONY: db/psql
 db/psql:
 	psql ${PASTE_DB_DSN}
 
-## db/migrations/new name=$1: create a new database migration
+## db/migrations/new name=$1: create a new database migration (development only)
 .PHONY: db/migrations/new
 db/migrations/up:
 	@echo 'Running up migrations...'
 	migrate -path ./migrations -database ${PASTE_DB_DSN} up
 
-## db/migrations/up: apply all up database migrations
+## db/migrations/up: apply all up database migrations (development only)
 .PHONY: db/migrations/up
 db/migrations/new: confirm
 	@echo 'Creating migration files for ${name}...'
@@ -78,30 +88,29 @@ linker_flags = '-s -X pasteAPI/internal/config.Version=${git_description}'
 
 ## build/api: build the cmd/api application
 .PHONY: build/api
-build/api:
+build/api: # build/docs
 	@echo 'Building cmd/api...'
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 	go build -ldflags=${linker_flags} -o=./bin/api ./cmd/api
 
-.PHONY: build/recompose
-build/recompose:
+## build/compose: build and deploy using Docker Compose
+.PHONY: build/compose
+build/compose:
 	@echo 'Composing down...'
 	docker compose down
 	@echo 'Building container...'
-	make build/container
+	make build/image
 	@echo 'Composing up...'
 	docker compose up
 
-.PHONY: build/container
-build/container:
+## build/image: build Docker image for the application
+.PHONY: build/image
+build/image:
 	@echo 'Building container...'
-	docker rmi pasteapi
+	-docker rmi pasteapi 2>/dev/null || true
 	docker build -t pasteapi .
 
-# ==================================================================================== #
-# DOCS (SWAGGER)
-# ==================================================================================== #
-
+## build/docs: generate API documentation using Swagger
 .PHONY: build/docs
 build/docs:
 	@echo 'Building docs'
