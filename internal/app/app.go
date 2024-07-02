@@ -1,15 +1,15 @@
 package app
 
 import (
-	"pasteAPI/internal/config"
-	"pasteAPI/internal/http/v1"
-	"pasteAPI/internal/metrics"
-	"pasteAPI/internal/repository"
-	"pasteAPI/internal/server"
-	"pasteAPI/internal/service"
-	"pasteAPI/pkg/logger"
-	"pasteAPI/pkg/mailer"
-	"pasteAPI/pkg/postgres"
+	"github.com/zhukovrost/pasteAPI/internal/config"
+	"github.com/zhukovrost/pasteAPI/internal/http/v1"
+	"github.com/zhukovrost/pasteAPI/internal/metrics"
+	"github.com/zhukovrost/pasteAPI/internal/repository"
+	"github.com/zhukovrost/pasteAPI/internal/server"
+	"github.com/zhukovrost/pasteAPI/internal/service"
+	"github.com/zhukovrost/pasteAPI/pkg/logger"
+	"github.com/zhukovrost/pasteAPI/pkg/mailer"
+	"github.com/zhukovrost/pasteAPI/pkg/postgres"
 )
 
 func Run(cfg *config.Config) {

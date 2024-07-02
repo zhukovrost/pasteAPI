@@ -3,7 +3,7 @@ package metrics
 import (
 	"database/sql"
 	"expvar"
-	"pasteAPI/internal/config"
+	"github.com/zhukovrost/pasteAPI/internal/config"
 	"runtime"
 	"time"
 )

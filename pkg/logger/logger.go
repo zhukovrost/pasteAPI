@@ -26,6 +26,11 @@ func New(needDebug bool) *logrus.Logger {
 	return myLogger
 }
 
+func ResetLogger() {
+	once = sync.Once{}
+	myLogger = nil
+}
+
 type customJSONFormatter struct{}
 
 func (f *customJSONFormatter) Format(entry *logrus.Entry) ([]byte, error) {

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"pasteAPI/pkg/validator"
+	"github.com/zhukovrost/pasteAPI/pkg/validator"
 	"strings"
 )
 

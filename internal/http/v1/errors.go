@@ -2,8 +2,8 @@ package v1
 
 import (
 	"fmt"
+	"github.com/zhukovrost/pasteAPI/pkg/helpers"
 	"net/http"
-	"pasteAPI/pkg/helpers"
 )
 
 // ErrorResponse is the typical error response.

@@ -5,8 +5,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	httpSwagger "github.com/swaggo/http-swagger"
 
+	"github.com/zhukovrost/pasteAPI/internal/http/v1"
 	"net/http"
-	"pasteAPI/internal/http/v1"
 )
 
 func NewRouter(handler *v1.Handler) http.Handler {

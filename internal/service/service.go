@@ -2,8 +2,8 @@ package service
 
 import (
 	"github.com/sirupsen/logrus"
-	"pasteAPI/internal/config"
-	"pasteAPI/pkg/mailer"
+	"github.com/zhukovrost/pasteAPI/internal/config"
+	"github.com/zhukovrost/pasteAPI/pkg/mailer"
 	"sync"
 )
 

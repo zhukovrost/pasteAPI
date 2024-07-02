@@ -1,8 +1,8 @@
 package v1
 
 import (
-	"pasteAPI/internal/repository"
-	"pasteAPI/internal/service"
+	"github.com/zhukovrost/pasteAPI/internal/repository"
+	"github.com/zhukovrost/pasteAPI/internal/service"
 )
 
 type Handler struct {

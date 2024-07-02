@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"pasteAPI/internal/repository/models"
+	"github.com/zhukovrost/pasteAPI/internal/repository/models"
 	"time"
 )
 

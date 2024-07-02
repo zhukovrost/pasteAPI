@@ -3,7 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"pasteAPI/internal/repository/models"
+	"github.com/zhukovrost/pasteAPI/internal/repository/models"
 	"time"
 )
 

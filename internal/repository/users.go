@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"errors"
-	"pasteAPI/internal/repository/models"
+	"github.com/zhukovrost/pasteAPI/internal/repository/models"
 	"strings"
 	"time"
 )

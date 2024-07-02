@@ -2,11 +2,11 @@ package v1
 
 import (
 	"errors"
+	"github.com/zhukovrost/pasteAPI/internal/repository"
+	"github.com/zhukovrost/pasteAPI/internal/repository/models"
+	"github.com/zhukovrost/pasteAPI/pkg/helpers"
+	"github.com/zhukovrost/pasteAPI/pkg/validator"
 	"net/http"
-	"pasteAPI/internal/repository"
-	"pasteAPI/internal/repository/models"
-	"pasteAPI/pkg/helpers"
-	"pasteAPI/pkg/validator"
 	"time"
 )
 

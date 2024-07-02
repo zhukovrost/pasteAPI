@@ -2,11 +2,11 @@ package main
 
 import (
 	"errors"
+	_ "github.com/zhukovrost/pasteAPI/docs"
+	"github.com/zhukovrost/pasteAPI/internal/app"
+	"github.com/zhukovrost/pasteAPI/internal/config"
 	"log"
 	"os"
-	_ "pasteAPI/docs"
-	"pasteAPI/internal/app"
-	"pasteAPI/internal/config"
 )
 
 // @title Paste API

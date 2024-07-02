@@ -1,9 +1,9 @@
 package v1
 
 import (
+	"github.com/zhukovrost/pasteAPI/internal/config"
+	"github.com/zhukovrost/pasteAPI/pkg/helpers"
 	"net/http"
-	"pasteAPI/internal/config"
-	"pasteAPI/pkg/helpers"
 )
 
 type HealthCheckOutput struct {

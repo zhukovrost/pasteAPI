@@ -15,7 +15,7 @@ smtp:
   host: smtp.mailtrap.io
   port: 2525
   user: 179f53d6893b87
-  sender: Paste <no-reply@pasteAPI>
+  sender: Paste <no-reply@https://github.com/zhukovrost/pasteAPI>
   password: <PASSWORD>
 cors:
   trustedOrigins: []

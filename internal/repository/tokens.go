@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"pasteAPI/internal/repository/models"
-	"pasteAPI/pkg/validator"
+	"github.com/zhukovrost/pasteAPI/internal/repository/models"
+	"github.com/zhukovrost/pasteAPI/pkg/validator"
 	"time"
 )
 

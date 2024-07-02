@@ -2,8 +2,8 @@ package auth
 
 import (
 	"context"
+	"github.com/zhukovrost/pasteAPI/internal/repository/models"
 	"net/http"
-	"pasteAPI/internal/repository/models"
 )
 
 type contextKey string

@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/zhukovrost/pasteAPI/pkg/validator"
 	"io"
 	"net/http"
 	"net/url"
-	"pasteAPI/pkg/validator"
 	"strconv"
 	"strings"
 )
