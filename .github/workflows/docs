@@ -3,7 +3,7 @@ name: Publish Swagger Docs to GitHub Pages
 on:
   push:
     branches:
-      - main  # вам может потребоваться настроить нужную ветку
+      - main  # Замените на нужную ветку, если это необходимо
 
 jobs:
   build-and-deploy:
@@ -13,21 +13,26 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
+      - name: Install Node.js and npm
+        uses: actions/setup-node@v2
         with:
-          go-version: 1.22 
+          node-version: '14'
 
       - name: Install Swagger CLI
         run: |
-          npm install -g swagger-cli  
+          npm install -g swagger-cli
 
       - name: Validate Swagger Files
         run: |
-          swagger-cli validate docs/swagger.yaml  
+          swagger-cli validate docs/swagger.yaml
+
+      - name: Build Swagger HTML
+        run: |
+          swagger-cli bundle docs/swagger.yaml -o docs/index.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs 
+          publish_dir: ./docs
+          allow_empty_commit: true
