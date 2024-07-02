@@ -33,8 +33,11 @@ docker compose up
 
 ### Step 5: Healthcheck
 
-Visit **localhost:8080/api/v1/healthcheck** to make sure everything is working correctly.
+Visit **http://localhost:8080/api/v1/healthcheck** to make sure everything is working correctly.
 
 ## Documentation
 
-Run the application and visit **localhost:8080/swagger** to see the documentation.
+Visit **https://zhukovrost.github.io/pasteAPI/** to see documentation 
+or visit **http://localhost:8080/swagger** while api is running.
+
+**Note:** The documentation won't work properly if api in not running.
