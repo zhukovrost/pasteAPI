@@ -31,7 +31,7 @@ confirm:
 ## dev/run/api: run the cmd/api application (development only)
 .PHONY: dev/run/api
 dev/run/api:
-	@go run ./cmd/api -db-dsn=${PASTE_DB_DSN} -smtp-password=${PASTE_SMTP_PASSWORD}
+	@go run ./cmd/api -debug -db-dsn="postgres://pasteadmin:admin@localhost:5432/paste?sslmode=disable" -smtp-password=${PASTE_SMTP_PASSWORD}
 
 ## db/psql: connect to the database using psql (development only)
 .PHONY: db/psql
