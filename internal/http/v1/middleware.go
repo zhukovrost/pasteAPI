@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"errors"
 	"expvar"
 	"fmt"
@@ -9,11 +10,9 @@ import (
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
 	"github.com/zhukovrost/pasteAPI/pkg/helpers"
 	"github.com/zhukovrost/pasteAPI/pkg/validator"
-	"golang.org/x/time/rate"
 	"net"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -40,56 +39,43 @@ func (h *Handler) DebugRequest(next http.Handler) http.Handler {
 }
 
 func (h *Handler) RateLimit(next http.Handler) http.Handler {
-	// TODO: redis cache
-	type client struct {
-		limiter  *rate.Limiter
-		lastSeen time.Time
-	}
-
-	var (
-		mu      = sync.Mutex{}
-		clients = make(map[string]*client)
-	)
-
-	go func() {
-		for {
-			time.Sleep(time.Minute)
-
-			mu.Lock()
-
-			for ip, client := range clients {
-				if time.Since(client.lastSeen) > 3*time.Minute {
-					delete(clients, ip)
-				}
-			}
-			mu.Unlock()
-		}
-	}()
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if h.service.Config.Limiter.Enabled {
-			ip, _, err := net.SplitHostPort(r.RemoteAddr)
-			if err != nil {
-				h.ServerErrorResponse(w, r, err)
-				return
-			}
-			mu.Lock()
-			if _, found := clients[ip]; !found {
-				clients[ip] = &client{limiter: rate.NewLimiter(
-					rate.Limit(h.service.Config.Limiter.RPS),
-					h.service.Config.Limiter.Burst,
-				)}
-			}
-
-			clients[ip].lastSeen = time.Now()
-			if !clients[ip].limiter.Allow() {
-				mu.Unlock()
-				h.RateLimitExceededResponse(w, r)
-				return
-			}
-
-			mu.Unlock()
+		if !h.service.Config.Limiter.Enabled {
+			next.ServeHTTP(w, r)
+			return
 		}
+
+		ip, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			h.ServerErrorResponse(w, r, err)
+			return
+		}
+
+		redisKey := fmt.Sprintf("client:%s", ip)
+		ctx, cancel := context.WithTimeout(context.Background(), h.service.Redis.DefaultTimeout)
+		defer cancel()
+
+		// Increment the counter for this IP and set expiration if it's a new key
+		pipe := h.service.Redis.Cache.TxPipeline()
+		incr := pipe.Incr(ctx, redisKey)
+		pipe.Expire(ctx, redisKey, time.Second)
+		_, err = pipe.Exec(ctx)
+		if err != nil {
+			h.ServerErrorResponse(w, r, err)
+			return
+		}
+
+		requests, err := incr.Result()
+		if err != nil {
+			h.ServerErrorResponse(w, r, err)
+			return
+		}
+
+		if requests > int64(h.service.Config.Limiter.Burst) {
+			h.RateLimitExceededResponse(w, r)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
