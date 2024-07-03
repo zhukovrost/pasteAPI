@@ -18,8 +18,7 @@ func Run(cfg *config.Config) {
 
 	mailer := mailer.New(cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password, cfg.SMTP.Sender)
 
-	//addr := cfg.Addr + ":" + cfg.Redis.Port
-	addr := "localhost:6379"
+	addr := cfg.Redis.Addr + ":" + cfg.Redis.Port
 	cache := cache.New(addr, cfg.Redis.Password, cfg.Redis.DB, cfg.Redis.Timeout, cfg.Redis.Expiration)
 	defer cache.CloseConn()
 
