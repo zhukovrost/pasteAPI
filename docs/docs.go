@@ -757,9 +757,9 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "http://localhost:8080",
 	BasePath:         "",
-	Schemes:          []string{},
+	Schemes:          []string{"http"},
 	Title:            "Paste API",
 	Description:      "This is a Paste API server. It is used to publish, read, edit text posts.",
 	InfoInstanceName: "swagger",

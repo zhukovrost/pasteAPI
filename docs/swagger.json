@@ -1,4 +1,7 @@
 {
+    "schemes": [
+        "http"
+    ],
     "swagger": "2.0",
     "info": {
         "description": "This is a Paste API server. It is used to publish, read, edit text posts.",
@@ -6,7 +9,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:8080",
+    "host": "http://localhost:8080",
     "paths": {
         "/api/v1/healthcheck": {
             "get": {
