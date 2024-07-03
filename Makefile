@@ -107,18 +107,16 @@ build/api: # build/docs
 
 ## build/compose: build and deploy using Docker Compose
 .PHONY: build/compose
-build/compose: dev/services/stop
+build/compose: # dev/services/stop
 	@echo 'Composing down...'
-	docker compose down
-	@echo 'Building container...'
-	make build/image
+	-docker compose down
 	@echo 'Composing up...'
-	docker compose up
+	docker compose up --build
 
 ## build/image: build Docker image for the application
 .PHONY: build/image
 build/image:
-	@echo 'Building container...'
+	@echo 'Building image...'
 	-docker rmi pasteapi 2>/dev/null || true
 	docker build -t pasteapi .
 
