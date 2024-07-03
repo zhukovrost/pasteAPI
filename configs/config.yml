@@ -1,4 +1,4 @@
-addr: localhost
+host: localhost
 status: available
 port: 8080
 env: development
@@ -19,3 +19,10 @@ smtp:
   password: <PASSWORD>
 cors:
   trustedOrigins: []
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+  timeout: 5s
+  expiration: 15m

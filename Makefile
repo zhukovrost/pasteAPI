@@ -7,7 +7,7 @@ include .env
 
 ## run/api: run the application
 .PHONY: run/api
-run/api:
+run/api: # dev/services/stop
 	@echo 'Running app...'
 	docker compose up
 
@@ -30,8 +30,20 @@ confirm:
 
 ## dev/run/api: run the cmd/api application (development only)
 .PHONY: dev/run/api
-dev/run/api:
-	@go run ./cmd/api -debug -db-dsn="postgres://pasteadmin:admin@localhost:5432/paste?sslmode=disable" -smtp-password=${PASTE_SMTP_PASSWORD}
+dev/run/api: # dev/services/start
+	@go run ./cmd/api -debug -db-dsn="postgres://pasteadmin:admin@localhost:5432/paste?sslmode=disable" -smtp-password=${PASTE_SMTP_PASSWORD} -redis-address="localhost"
+
+## dev/services/start runs all services locally
+.PHONY: dev/services/start
+dev/services/start:
+	sudo systemctl start redis
+	sudo systemctl start postgresql
+
+## dev/services/stop stops all local services
+.PHONY: dev/services/stop
+dev/services/stop:
+	sudo systemctl stop redis
+	sudo systemctl stop postgresql
 
 ## db/psql: connect to the database using psql (development only)
 .PHONY: db/psql
@@ -95,7 +107,7 @@ build/api: # build/docs
 
 ## build/compose: build and deploy using Docker Compose
 .PHONY: build/compose
-build/compose:
+build/compose: dev/services/stop
 	@echo 'Composing down...'
 	docker compose down
 	@echo 'Building container...'
