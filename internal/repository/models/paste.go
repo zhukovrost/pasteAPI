@@ -25,3 +25,7 @@ func ValidatePaste(v *validator.Validator, p *Paste) {
 	v.Check(p.Text != "", "text", "must be provided")
 	v.Check(len(p.Title) <= 500, "title", "must not be more than 500 bytes long")
 }
+
+func ValidateTime(v *validator.Validator, p *Paste) {
+	v.Check(p.ExpiresAt.After(time.Now()), "expiration", "this paste is expired")
+}

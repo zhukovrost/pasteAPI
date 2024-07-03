@@ -3,32 +3,49 @@ package v1
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
 	"github.com/zhukovrost/pasteAPI/pkg/cache"
+	"github.com/zhukovrost/pasteAPI/pkg/validator"
 )
 
-func getFromCache(myCache *cache.MyCache, key string) (*models.Paste, error) {
+func getFromCache(myCache *cache.MyCache, key string, result interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), myCache.DefaultTimeout)
 	defer cancel()
 
 	data, err := myCache.Cache.Get(ctx, key).Bytes()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	result := &models.Paste{}
 	if err := json.Unmarshal(data, result); err != nil {
-		return nil, err
+		return err
 	}
 
-	return result, nil
+	v := validator.New()
+	switch result.(type) {
+	case *models.Paste:
+		models.ValidateTime(v, result.(*models.Paste))
+	case *ListPastesOutput:
+		for _, paste := range result.(*ListPastesOutput).Pastes {
+			models.ValidateTime(v, paste)
+		}
+	default:
+		return errors.New("data processing error: invalid result type")
+	}
+
+	if !v.Valid() {
+		return errors.New("cache error: some pastes are expired")
+	}
+
+	return nil
 }
 
-func setCache(myCache *cache.MyCache, key string, model *models.Paste) error {
+func setCache(myCache *cache.MyCache, key string, value interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), myCache.DefaultTimeout)
 	defer cancel()
 
-	data, err := json.Marshal(model)
+	data, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
@@ -58,4 +75,26 @@ func deleteFromCache(myCache *cache.MyCache, key string) error {
 	defer cancel()
 
 	return myCache.Cache.Del(ctx, key).Err()
+}
+
+func invalidateCache(myCache *cache.MyCache, pattern string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), myCache.DefaultTimeout)
+	defer cancel()
+
+	keys, err := myCache.Cache.Keys(ctx, pattern).Result()
+	if err != nil {
+		return err
+	}
+	if len(keys) == 0 {
+		return nil
+	}
+
+	// Using Redis pipeline to delete keys atomically
+	pipe := myCache.Cache.Pipeline()
+	for _, key := range keys {
+		pipe.Del(ctx, key)
+	}
+
+	_, err = pipe.Exec(ctx)
+	return err
 }

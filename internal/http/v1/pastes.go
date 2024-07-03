@@ -14,8 +14,15 @@ import (
 	"time"
 )
 
+// pasteKey generates the key for searched paste
 func pasteKey(id uint16) string {
 	return fmt.Sprintf("paste:%d", id)
+}
+
+// searchKey generates the key for search result
+// pattern: search:title:category:sort:page:pagesize
+func searchKey(settings SearchSettings) string {
+	return fmt.Sprintf("search:%s:%d:%s:%d:%d", settings.Title, settings.Category, settings.Filters.Sort, settings.Filters.Page, settings.Filters.PageSize)
 }
 
 type SearchSettings struct {
@@ -64,16 +71,42 @@ func (h *Handler) ListPastesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cacheKey := searchKey(in)
+	listOutput := &ListPastesOutput{}
+	err := getFromCache(h.service.Redis, cacheKey, listOutput)
+	if err == nil {
+		h.service.Logger.Debugf("pastes list got from cache")
+		if err = helpers.WriteJSON(w, http.StatusOK, listOutput, nil); err != nil {
+			h.ServerErrorResponse(w, r, err)
+		}
+		return
+	} else if !errors.Is(err, redis.Nil) {
+		h.service.Logger.Error(err)
+	}
+
 	pastes, metadata, err := h.models.Pastes.ReadAll(in.Title, in.Category, in.Filters)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return
 	}
+	listOutput = &ListPastesOutput{pastes, metadata}
 	// SendEmail a JSON response containing the movie repository.
-	err = helpers.WriteJSON(w, http.StatusOK, helpers.Envelope{"pastes": pastes, "metadata": metadata}, nil)
+	err = helpers.WriteJSON(w, http.StatusOK, listOutput, nil)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 	}
+
+	go func() {
+		in, err := existsInCache(h.service.Redis, cacheKey)
+		if err != nil {
+			h.service.Logger.Error(err)
+			return
+		}
+
+		if !in && setCache(h.service.Redis, cacheKey, listOutput) != nil {
+			h.service.Logger.Error(err)
+		}
+	}()
 }
 
 type PasteResp struct {
@@ -105,7 +138,8 @@ func (h *Handler) GetPasteHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	paste, err := getFromCache(h.service.Redis, pasteKey(uint16(id)))
+	paste := &models.Paste{}
+	err = getFromCache(h.service.Redis, pasteKey(uint16(id)), paste)
 	if err == nil {
 		successfulResp(paste)
 		h.service.Logger.Debugf("paste (ID: %d) got from cache", paste.Id)
@@ -188,6 +222,10 @@ func (h *Handler) DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 		if in && deleteFromCache(h.service.Redis, pasteKey(uint16(id))) != nil {
 			h.service.Logger.Error(err)
 		}
+
+		if in && invalidateCache(h.service.Redis, pasteKey(uint16(id))) != nil {
+			h.service.Logger.Error(err)
+		}
 	}()
 }
 
@@ -259,11 +297,13 @@ func (h *Handler) CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func() {
-		if err = setCache(h.service.Redis, pasteKey(paste.Id), paste); err != nil {
-			h.service.Logger.Errorf("paste (ID: %d) not added to cache due to the error: %s", paste.Id, err)
-			return
+		if err = setCache(h.service.Redis, pasteKey(paste.Id), paste); err == nil {
+			if err = invalidateCache(h.service.Redis, "search:*"); err == nil {
+				h.service.Logger.Debugf("paste (ID: %d) added to cache", paste.Id)
+				return
+			}
 		}
-		h.service.Logger.Debugf("paste (ID: %d) added to cache", paste.Id)
+		h.service.Logger.Errorf("paste (ID: %d) not added to cache due to the error: %s", paste.Id, err)
 	}()
 }
 
@@ -299,7 +339,8 @@ func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	paste, err := getFromCache(h.service.Redis, pasteKey(uint16(id)))
+	paste := &models.Paste{}
+	err = getFromCache(h.service.Redis, pasteKey(uint16(id)), paste)
 	if err != nil {
 		paste, err = h.models.Pastes.Read(uint16(id))
 		if err != nil {
@@ -366,4 +407,10 @@ func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 	}
+
+	go func() {
+		if err = invalidateCache(h.service.Redis, "search:*"); err != nil {
+			h.service.Logger.Error(err)
+		}
+	}()
 }
