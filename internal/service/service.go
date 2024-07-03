@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"github.com/sirupsen/logrus"
 	"github.com/zhukovrost/pasteAPI/internal/config"
 	"github.com/zhukovrost/pasteAPI/pkg/cache"
@@ -13,15 +14,17 @@ type Service struct {
 	Logger *logrus.Logger
 	Mailer *mailer.Mailer
 	Redis  *cache.MyCache
+	DB     *sql.DB
 	Wg     sync.WaitGroup
 }
 
-func New(cfg *config.Config, logger *logrus.Logger, mailer *mailer.Mailer, cache *cache.MyCache) *Service {
+func New(cfg *config.Config, logger *logrus.Logger, mailer *mailer.Mailer, cache *cache.MyCache, db *sql.DB) *Service {
 	return &Service{
 		Config: cfg,
 		Logger: logger,
 		Mailer: mailer,
 		Redis:  cache,
+		DB:     db,
 		Wg:     sync.WaitGroup{},
 	}
 }

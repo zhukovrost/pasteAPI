@@ -18,7 +18,7 @@ var (
 )
 
 type Config struct {
-	Addr   string `yaml:"addr" envconfig:"ADDRESS"`
+	Host   string `yaml:"host" envconfig:"ADDRESS"`
 	Port   int    `yaml:"port" envconfig:"PORT"`
 	Env    string `yaml:"env" envconfig:"ENVIRONMENT"`
 	Status string `yaml:"status" envconfig:"STATUS"`
@@ -44,7 +44,7 @@ type Config struct {
 		TrustedOrigins []string `yaml:"trustedOrigins" envconfig:"PASTE_TRUSTED_ORIGINS"`
 	} `yaml:"cors"`
 	Redis struct {
-		Addr       string `yaml:"addr" envconfig:"PASTE_REDIS_ADDRESS"`
+		Host       string `yaml:"host" envconfig:"PASTE_REDIS_ADDRESS"`
 		Port       string `yaml:"port" envconfig:"PASTE_REDIS_PORT"`
 		Password   string `yaml:"password" envconfig:"PASTE_REDIS_PASSWORD"`
 		DB         int    `yaml:"db" envconfig:"PASTE_REDIS_DB"`
@@ -110,7 +110,7 @@ func processFlags(cfg *Config) error {
 	flag.StringVar(&cfg.SMTP.Password, "smtp-password", cfg.SMTP.Password, "SMTP password")
 	flag.StringVar(&cfg.SMTP.Sender, "smtp-sender", cfg.SMTP.Sender, "SMTP sender")
 
-	flag.StringVar(&cfg.Redis.Addr, "redis-address", cfg.Redis.Addr, "Redis address")
+	flag.StringVar(&cfg.Redis.Host, "redis-address", cfg.Redis.Host, "Redis address")
 	flag.StringVar(&cfg.Redis.Port, "redis-port", cfg.Redis.Port, "Redis port")
 	flag.StringVar(&cfg.Redis.Password, "redis-password", cfg.Redis.Password, "Redis password")
 	flag.IntVar(&cfg.Redis.DB, "redis-db", cfg.Redis.DB, "Redis database")

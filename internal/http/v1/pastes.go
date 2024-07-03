@@ -96,7 +96,7 @@ func (h *Handler) ListPastesHandler(w http.ResponseWriter, r *http.Request) {
 		h.ServerErrorResponse(w, r, err)
 	}
 
-	go func() {
+	h.service.Background(func() {
 		in, err := existsInCache(h.service.Redis, cacheKey)
 		if err != nil {
 			h.service.Logger.Error(err)
@@ -106,7 +106,7 @@ func (h *Handler) ListPastesHandler(w http.ResponseWriter, r *http.Request) {
 		if !in && setCache(h.service.Redis, cacheKey, listOutput) != nil {
 			h.service.Logger.Error(err)
 		}
-	}()
+	})
 }
 
 type PasteResp struct {
@@ -161,7 +161,7 @@ func (h *Handler) GetPasteHandler(w http.ResponseWriter, r *http.Request) {
 
 	successfulResp(paste)
 
-	go func() {
+	h.service.Background(func() {
 		in, err := existsInCache(h.service.Redis, pasteKey(paste.Id))
 		if err != nil {
 			h.service.Logger.Error(err)
@@ -171,7 +171,7 @@ func (h *Handler) GetPasteHandler(w http.ResponseWriter, r *http.Request) {
 		if !in && setCache(h.service.Redis, pasteKey(paste.Id), paste) != nil {
 			h.service.Logger.Error(err)
 		}
-	}()
+	})
 }
 
 // DeletePasteHandler deletes a paste by its ID
@@ -296,7 +296,7 @@ func (h *Handler) CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 		h.ServerErrorResponse(w, r, err)
 	}
 
-	go func() {
+	h.service.Background(func() {
 		if err = setCache(h.service.Redis, pasteKey(paste.Id), paste); err == nil {
 			if err = invalidateCache(h.service.Redis, "search:*"); err == nil {
 				h.service.Logger.Debugf("paste (ID: %d) added to cache", paste.Id)
@@ -304,7 +304,7 @@ func (h *Handler) CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		h.service.Logger.Errorf("paste (ID: %d) not added to cache due to the error: %s", paste.Id, err)
-	}()
+	})
 }
 
 type UpdatePasteInput struct {
@@ -408,9 +408,9 @@ func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 		h.ServerErrorResponse(w, r, err)
 	}
 
-	go func() {
+	h.service.Background(func() {
 		if err = invalidateCache(h.service.Redis, "search:*"); err != nil {
 			h.service.Logger.Error(err)
 		}
-	}()
+	})
 }

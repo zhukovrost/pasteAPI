@@ -18,7 +18,7 @@ func Run(cfg *config.Config) {
 
 	mailer := mailer.New(cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password, cfg.SMTP.Sender)
 
-	addr := cfg.Redis.Addr + ":" + cfg.Redis.Port
+	addr := cfg.Redis.Host + ":" + cfg.Redis.Port
 	cache := cache.New(addr, cfg.Redis.Password, cfg.Redis.DB, cfg.Redis.Timeout, cfg.Redis.Expiration)
 	defer cache.CloseConn()
 
@@ -26,13 +26,12 @@ func Run(cfg *config.Config) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer db.Close()
-	log.Info("database connection pool established")
-
 	metrics.PostMetrics(db.Stats())
 
-	service := service.New(cfg, log, mailer, cache)
+	log.Info("service connections are established")
+
+	service := service.New(cfg, log, mailer, cache, db)
 	models := repository.NewModels(db)
 
 	handler := v1.NewHandler(service, models)

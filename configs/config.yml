@@ -1,4 +1,4 @@
-addr: localhost
+host: localhost
 status: available
 port: 8080
 env: development
@@ -20,7 +20,7 @@ smtp:
 cors:
   trustedOrigins: []
 redis:
-  addr: localhost
+  host: localhost
   port: 6379
   password: ""
   db: 0

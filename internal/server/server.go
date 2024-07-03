@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/zhukovrost/pasteAPI/internal/autoclean"
 	"github.com/zhukovrost/pasteAPI/internal/config"
 	"github.com/zhukovrost/pasteAPI/internal/http"
 	"github.com/zhukovrost/pasteAPI/internal/http/v1"
@@ -28,6 +29,10 @@ func New(config *config.Config, handler *v1.Handler) *http.Server {
 // Run function runs the server with a graceful shutdown
 func Run(server *http.Server, service *service.Service) error {
 	shutdownError := make(chan error)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go autoclean.Start(ctx, service)
 
 	go func() {
 		quit := make(chan os.Signal, 1)
@@ -37,7 +42,9 @@ func Run(server *http.Server, service *service.Service) error {
 			"signal": s.String(),
 		}).Info("caught signal")
 
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		cancel()
+
+		ctx, cancel = context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 
 		err := server.Shutdown(ctx)
