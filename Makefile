@@ -11,6 +11,7 @@ run/api: # dev/services/stop
 	@echo 'Running app...'
 	docker compose up
 
+
 # ==================================================================================== #
 # HELPERS
 # ==================================================================================== #
@@ -117,6 +118,7 @@ build/compose: # dev/services/stop
 .PHONY: build/image
 build/image:
 	@echo 'Building image...'
+	-docker compose down
 	-docker rmi pasteapi 2>/dev/null || true
 	docker build -t pasteapi .
 
