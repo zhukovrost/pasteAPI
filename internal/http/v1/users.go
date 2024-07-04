@@ -87,6 +87,14 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 			"Login":          user.Login,
 		}
 		err = h.service.Mailer.SendEmail(user.Email, "welcome.tmpl", tmplData)
+
+		if h.service.Config.Env == "development" {
+			h.service.Logger.Infof("New activation tocken for user %s (id: %d): %s. "+
+				"Go to (PUT) http://localhost:8080/api/v1/users/activated/ with token in th request body to activate user.",
+				user.Login, user.ID, token.Plaintext,
+			)
+		}
+
 		if err != nil {
 			h.service.Logger.Error(err)
 		}

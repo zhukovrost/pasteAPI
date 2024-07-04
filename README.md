@@ -4,13 +4,13 @@
 
 Visit **https://zhukovrost.github.io/pasteAPI/** to see documentation
 
-or visit **http://localhost:8080/swagger** while api is running.
+or visit **http://localhost:8080/swagger/** while api is running.
 
-**Note:** The documentation won't work properly if api in not running.
+**Note:** The documentation won't work properly if the api is not running or if you are using GitHub Pages.
 
 ## Instructions for launching on a local computer
 
-**Docker needed**. Docker installation instruction: https://docs.docker.com/get-docker/
+**Note: Docker needed**. Docker installation instruction: https://docs.docker.com/get-docker/
 
 ### Step 1: Clone the repository
 
