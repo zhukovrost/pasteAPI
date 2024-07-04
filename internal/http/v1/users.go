@@ -123,7 +123,7 @@ type ActivateUserInput struct {
 // @Failure      422  {object}  ErrorResponse "Unprocessable data"
 // @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
 // @Failure      500  {object}  ErrorResponse "Internal server error"
-// @Router       /api/v1/users/activated/ [put]
+// @Router       /api/v1/users/activated [put]
 func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 	var in ActivateUserInput
 

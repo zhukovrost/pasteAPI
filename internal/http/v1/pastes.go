@@ -180,7 +180,7 @@ func (h *Handler) GetPasteHandler(w http.ResponseWriter, r *http.Request) {
 // @Description  Deletes a paste from the database by its ID.
 // @Tags         pastes
 // @Produce      json
-// @Security Bearer
+// @Security BearerAuth
 // @Param        id   path     int   true   "Paste ID"
 // @Success      204  "Successfully deleted paste"
 // @Failure      403  {object}  ErrorResponse "User is not allowed to edit this paste"
@@ -244,6 +244,7 @@ type CreatePasteInput struct {
 // @Accept       json
 // @Produce      json
 // @Param        body  body     CreatePasteInput  true  "Paste creation input"
+// @Security BearerAuth
 // @Success      201  {object}  PasteResp  "Successfully created paste"
 // @Failure      400  {object}  ErrorResponse "Bad request"
 // @Failure      422  {object}  ErrorResponse "Unprocessable data"
@@ -323,7 +324,7 @@ type UpdatePasteInput struct {
 // @Produce      json
 // @Param        id   path     int   true   "Paste ID"
 // @Param        body  body     UpdatePasteInput  false  "Paste update input"
-// @Security Bearer
+// @Security BearerAuth
 // @Success      200  {object}  PasteResp  "Successfully updated paste"
 // @Failure      400  {object}  ErrorResponse "Bad request"
 // @Failure      403  {object}  ErrorResponse "User is not allowed to edit this paste"
