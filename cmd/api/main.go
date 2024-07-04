@@ -12,7 +12,7 @@ import (
 // @title Paste API
 // @version 1.0
 // @description This is a Paste API server. It is used to publish, read, edit text posts.
-// @host http://localhost:8080
+// @host localhost:8080
 // @schemes http
 // @securityDefinitions.apikey Bearer
 // @in header

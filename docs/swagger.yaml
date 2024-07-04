@@ -133,7 +133,7 @@ definitions:
       user:
         $ref: '#/definitions/models.User'
     type: object
-host: http://localhost:8080
+host: localhost:8080
 info:
   contact: {}
   description: This is a Paste API server. It is used to publish, read, edit text

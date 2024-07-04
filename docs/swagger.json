@@ -9,7 +9,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "http://localhost:8080",
+    "host": "localhost:8080",
     "paths": {
         "/api/v1/healthcheck": {
             "get": {
