@@ -32,7 +32,7 @@ confirm:
 ## dev/run/api: run the cmd/api application (development only)
 .PHONY: dev/run/api
 dev/run/api: # dev/services/start
-	@go run ./cmd/api -debug -db-dsn="postgres://pasteadmin:admin@localhost:5432/paste?sslmode=disable" -smtp-password=${PASTE_SMTP_PASSWORD} -redis-address="localhost"
+	@go run ./cmd/api -debug -db-dsn="postgres://pasteadmin:admin@localhost:5432/paste?sslmode=disable" -smtp-password=${PASTE_SMTP_PASSWORD} -redis-address="localhost" -env="development"
 
 ## dev/services/start runs all services locally
 .PHONY: dev/services/start

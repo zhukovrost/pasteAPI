@@ -84,7 +84,11 @@ func (h *Handler) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Authorization")
 		authorizationHeader := r.Header.Get("Authorization")
-		h.service.Logger.Debugf("Authorization header token is: %s", authorizationHeader)
+
+		if h.service.Config.Env == "development" {
+			h.service.Logger.Debugf("Authorization header token is: %s", authorizationHeader)
+		}
+
 		if authorizationHeader == "" {
 			r = auth.ContextSetUser(r, models.AnonymousUser)
 			next.ServeHTTP(w, r)

@@ -28,6 +28,8 @@ func NewRouter(handler *v1.Handler) http.Handler {
 				r.Get("/", handler.GetPasteHandler)
 				r.Delete("/", handler.RequireAllowedToWriteUser(handler.DeletePasteHandler))
 				r.Patch("/", handler.RequireAllowedToWriteUser(handler.UpdatePasteHandler))
+
+				r.Put("/permission/{user_id}", handler.RequireAllowedToWriteUser(handler.PermissionHandler))
 			})
 		})
 

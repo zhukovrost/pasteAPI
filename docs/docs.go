@@ -149,6 +149,12 @@ const docTemplate = `{
                         "description": "Successfully created paste",
                         "schema": {
                             "$ref": "#/definitions/v1.PasteResp"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "URL of the newly created paste"
+                            }
                         }
                     },
                     "400": {
@@ -338,6 +344,72 @@ const docTemplate = `{
                     },
                     "422": {
                         "description": "Unprocessable data",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/pastes/{id}/permission/{user_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Gives a permission to user in the url to update / delete paste in the url.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pastes",
+                    "users"
+                ],
+                "summary": "Gives a write permission",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Paste ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully gave permission",
+                        "schema": {
+                            "$ref": "#/definitions/v1.PastePermissionResponse"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "URL of the newly created paste"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
                         "schema": {
                             "$ref": "#/definitions/v1.ErrorResponse"
                         }
@@ -698,6 +770,22 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/models.Paste"
+                    }
+                }
+            }
+        },
+        "v1.PastePermissionResponse": {
+            "type": "object",
+            "properties": {
+                "permission": {
+                    "type": "object",
+                    "properties": {
+                        "paste_id": {
+                            "type": "integer"
+                        },
+                        "user_id": {
+                            "type": "integer"
+                        }
                     }
                 }
             }
