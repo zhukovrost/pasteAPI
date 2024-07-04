@@ -18,7 +18,7 @@ smtp:
   sender: Paste <no-reply@https://github.com/zhukovrost/pasteAPI>
   password: <PASSWORD>
 cors:
-  trustedOrigins: ["https://zhukovrost.github.io/pasteAPI/"]
+  trustedOrigins: ["https://zhukovrost.github.io/pasteAPI/*", "http://localhost:8080/*"]
 redis:
   host: localhost
   port: 6379
