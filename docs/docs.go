@@ -117,6 +117,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new paste in the database by input data.",
                 "consumes": [
                     "application/json"
@@ -222,7 +227,7 @@ const docTemplate = `{
             "delete": {
                 "security": [
                     {
-                        "Bearer": []
+                        "BearerAuth": []
                     }
                 ],
                 "description": "Deletes a paste from the database by its ID.",
@@ -275,7 +280,7 @@ const docTemplate = `{
             "patch": {
                 "security": [
                     {
-                        "Bearer": []
+                        "BearerAuth": []
                     }
                 ],
                 "description": "Updates the paste in the database by ID and input data.",
@@ -475,7 +480,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/activated/": {
+        "/api/v1/users/activated": {
             "put": {
                 "description": "Activates the user by input token.",
                 "consumes": [
@@ -746,12 +751,18 @@ const docTemplate = `{
         }
     },
     "securityDefinitions": {
-        "Bearer": {
+        "BearerAuth": {
+            "description": "To authorize, use the format: Bearer \u003cyour_token\u003e. For example: Bearer abc123xyz",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
         }
-    }
+    },
+    "security": [
+        {
+            "BearerAuth": []
+        }
+    ]
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it

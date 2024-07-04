@@ -242,6 +242,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Create a new paste
       tags:
       - pastes
@@ -276,7 +278,7 @@ paths:
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Deletes a paste
       tags:
       - pastes
@@ -357,7 +359,7 @@ paths:
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Update the paste
       tags:
       - pastes
@@ -442,7 +444,7 @@ paths:
       summary: Registration
       tags:
       - users
-  /api/v1/users/activated/:
+  /api/v1/users/activated:
     put:
       consumes:
       - application/json
@@ -482,8 +484,12 @@ paths:
       - users
 schemes:
 - http
+security:
+- BearerAuth: []
 securityDefinitions:
-  Bearer:
+  BearerAuth:
+    description: 'To authorize, use the format: Bearer <your_token>. For example:
+      Bearer abc123xyz'
     in: header
     name: Authorization
     type: apiKey

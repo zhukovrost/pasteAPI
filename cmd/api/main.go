@@ -14,9 +14,13 @@ import (
 // @description This is a Paste API server. It is used to publish, read, edit text posts.
 // @host localhost:8080
 // @schemes http
-// @securityDefinitions.apikey Bearer
+
+// @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
+// @description To authorize, use the format: Bearer <your_token>. For example: Bearer abc123xyz
+
+// @security BearerAuth
 func main() {
 	cfg, err := config.New()
 
