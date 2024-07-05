@@ -39,12 +39,14 @@ dev/run/api: # dev/services/start
 dev/services/start:
 	sudo systemctl start redis
 	sudo systemctl start postgresql
+	sudo systemctl start rabbitmq-server
 
 ## dev/services/stop stops all local services
 .PHONY: dev/services/stop
 dev/services/stop:
 	sudo systemctl stop redis
 	sudo systemctl stop postgresql
+	sudo systemctl stop rabbitmq-server
 
 ## db/psql: connect to the database using psql (development only)
 .PHONY: db/psql

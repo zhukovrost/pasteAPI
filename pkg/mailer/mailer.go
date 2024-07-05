@@ -15,6 +15,7 @@ var templateFS embed.FS
 type Mailer struct {
 	dialer *mail.Dialer
 	sender string
+	Config
 }
 
 var (
@@ -22,14 +23,22 @@ var (
 	myMailer *Mailer
 )
 
-func New(host string, port int, username, password, sender string) *Mailer {
+type Config struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+	Sender   string
+	Timeout  time.Duration
+}
+
+func New(c Config) *Mailer {
 	once.Do(func() {
 		myMailer = new(Mailer)
-		dialer := mail.NewDialer(host, port, username, password)
-		dialer.Timeout = 5 * time.Second
+		dialer := mail.NewDialer(c.Host, c.Port, c.Username, c.Password)
+		dialer.Timeout = 5 * c.Timeout
 		myMailer.dialer = dialer
-		myMailer.sender = sender
-
+		myMailer.sender = c.Sender
 	})
 
 	return myMailer

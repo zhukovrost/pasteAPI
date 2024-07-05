@@ -11,18 +11,58 @@ import (
 	"github.com/zhukovrost/pasteAPI/pkg/logger"
 	"github.com/zhukovrost/pasteAPI/pkg/mailer"
 	"github.com/zhukovrost/pasteAPI/pkg/postgres"
+
+	"time"
 )
 
 func Run(cfg *config.Config) {
-	log := logger.New(config.NeedDebug)
+	log := logger.New(cfg.Logger.NeedDebug)
 
-	mailer := mailer.New(cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password, cfg.SMTP.Sender)
+	mailerTimeout, err := time.ParseDuration(cfg.SMTP.Timeout)
+	if err != nil {
+		mailerTimeout = 5 * time.Second // default
+	}
 
-	addr := cfg.Redis.Host + ":" + cfg.Redis.Port
-	cache := cache.New(addr, cfg.Redis.Password, cfg.Redis.DB, cfg.Redis.Timeout, cfg.Redis.Expiration)
+	mailer := mailer.New(mailer.Config{
+		Host:     cfg.SMTP.Host,
+		Port:     cfg.SMTP.Port,
+		Username: cfg.SMTP.Username,
+		Password: cfg.SMTP.Password,
+		Sender:   cfg.SMTP.Sender,
+		Timeout:  mailerTimeout,
+	})
+
+	cacheExpiration, err := time.ParseDuration(cfg.Redis.Expiration)
+	if err != nil {
+		cacheExpiration = 15 * time.Minute // default
+	}
+
+	cacheTimeout, err := time.ParseDuration(cfg.Redis.Timeout)
+	if err != nil {
+		cacheTimeout = 5 * time.Second // default
+	}
+
+	cache := cache.New(cache.Config{
+		Addr:       cfg.Redis.Host + ":" + cfg.Redis.Port,
+		Password:   cfg.Redis.Password,
+		DB:         cfg.Redis.DB,
+		Expiration: cacheExpiration,
+		Timeout:    cacheTimeout,
+	})
 	defer cache.CloseConn()
 
-	db, err := postgres.OpenDB(cfg.DB.DSN, cfg.DB.MaxIdleTime, cfg.DB.MaxOpenConns, cfg.DB.MaxIdleConns)
+	idleConnsDur, err := time.ParseDuration(cfg.DB.MaxIdleTime)
+	if err != nil {
+		idleConnsDur = 10 * time.Minute // default
+	}
+
+	db, err := postgres.OpenDB(postgres.Config{
+		DSN:          cfg.DB.DSN,
+		MaxIdleTime:  idleConnsDur,
+		MaxOpenConns: cfg.DB.MaxOpenConns,
+		MaxIdleConns: cfg.DB.MaxIdleConns,
+	})
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,11 +71,32 @@ func Run(cfg *config.Config) {
 
 	log.Info("service connections are established")
 
-	service := service.New(cfg, log, mailer, cache, db)
-	models := repository.NewModels(db)
+	service := service.New(
+		&service.Config{
+			Host:   cfg.Host,
+			Port:   cfg.Port,
+			Env:    cfg.Env,
+			Status: cfg.Status,
+			Limiter: struct {
+				RPS     float64
+				Burst   int
+				Enabled bool
+			}(cfg.Limiter),
+			CORS:      struct{ TrustedOrigins []string }(cfg.CORS),
+			BuildTime: config.BuildTime,
+			Version:   config.Version,
+		},
+		&service.Dependencies{
+			Logger: log,
+			DB:     db,
+			Mailer: mailer,
+			Redis:  cache,
+		},
+		repository.NewModels(db),
+	)
 
-	handler := v1.NewHandler(service, models)
-	srv := server.New(cfg, handler)
+	handler := v1.NewHandler(service)
+	srv := server.New(handler, service.Port)
 
 	if err = server.Run(srv, service); err != nil {
 		log.Fatal(err)

@@ -73,18 +73,18 @@ func (h *Handler) ListPastesHandler(w http.ResponseWriter, r *http.Request) {
 
 	cacheKey := searchKey(in)
 	listOutput := &ListPastesOutput{}
-	err := getFromCache(h.service.Redis, cacheKey, listOutput)
+	err := getFromCache(h.service.Deps.Redis, cacheKey, listOutput)
 	if err == nil {
-		h.service.Logger.Debugf("pastes list got from cache")
+		h.service.Deps.Logger.Debugf("pastes list got from cache")
 		if err = helpers.WriteJSON(w, http.StatusOK, listOutput, nil); err != nil {
 			h.ServerErrorResponse(w, r, err)
 		}
 		return
 	} else if !errors.Is(err, redis.Nil) {
-		h.service.Logger.Error(err)
+		h.service.Deps.Logger.Error(err)
 	}
 
-	pastes, metadata, err := h.models.Pastes.ReadAll(in.Title, in.Category, in.Filters)
+	pastes, metadata, err := h.service.Models.Pastes.ReadAll(in.Title, in.Category, in.Filters)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return
@@ -97,14 +97,14 @@ func (h *Handler) ListPastesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.service.Background(func() {
-		in, err := existsInCache(h.service.Redis, cacheKey)
+		in, err := existsInCache(h.service.Deps.Redis, cacheKey)
 		if err != nil {
-			h.service.Logger.Error(err)
+			h.service.Deps.Logger.Error(err)
 			return
 		}
 
-		if !in && setCache(h.service.Redis, cacheKey, listOutput) != nil {
-			h.service.Logger.Error(err)
+		if !in && setCache(h.service.Deps.Redis, cacheKey, listOutput) != nil {
+			h.service.Deps.Logger.Error(err)
 		}
 	})
 }
@@ -139,16 +139,16 @@ func (h *Handler) GetPasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	paste := &models.Paste{}
-	err = getFromCache(h.service.Redis, pasteKey(uint16(id)), paste)
+	err = getFromCache(h.service.Deps.Redis, pasteKey(uint16(id)), paste)
 	if err == nil {
 		successfulResp(paste)
-		h.service.Logger.Debugf("paste (ID: %d) got from cache", paste.Id)
+		h.service.Deps.Logger.Debugf("paste (ID: %d) got from cache", paste.Id)
 		return
 	} else if !errors.Is(err, redis.Nil) {
-		h.service.Logger.Error(err)
+		h.service.Deps.Logger.Error(err)
 	}
 
-	paste, err = h.models.Pastes.Read(uint16(id))
+	paste, err = h.service.Models.Pastes.Read(uint16(id))
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrRecordNotFound):
@@ -162,14 +162,14 @@ func (h *Handler) GetPasteHandler(w http.ResponseWriter, r *http.Request) {
 	successfulResp(paste)
 
 	h.service.Background(func() {
-		in, err := existsInCache(h.service.Redis, pasteKey(paste.Id))
+		in, err := existsInCache(h.service.Deps.Redis, pasteKey(paste.Id))
 		if err != nil {
-			h.service.Logger.Error(err)
+			h.service.Deps.Logger.Error(err)
 			return
 		}
 
-		if !in && setCache(h.service.Redis, pasteKey(paste.Id), paste) != nil {
-			h.service.Logger.Error(err)
+		if !in && setCache(h.service.Deps.Redis, pasteKey(paste.Id), paste) != nil {
+			h.service.Deps.Logger.Error(err)
 		}
 	})
 }
@@ -195,7 +195,7 @@ func (h *Handler) DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.models.Pastes.Delete(uint16(id))
+	err = h.service.Models.Pastes.Delete(uint16(id))
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrRecordNotFound):
@@ -213,18 +213,18 @@ func (h *Handler) DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Delete paste from cache as well
 	go func() {
-		in, err := existsInCache(h.service.Redis, pasteKey(uint16(id)))
+		in, err := existsInCache(h.service.Deps.Redis, pasteKey(uint16(id)))
 		if err != nil {
-			h.service.Logger.Error(err)
+			h.service.Deps.Logger.Error(err)
 			return
 		}
 
-		if in && deleteFromCache(h.service.Redis, pasteKey(uint16(id))) != nil {
-			h.service.Logger.Error(err)
+		if in && deleteFromCache(h.service.Deps.Redis, pasteKey(uint16(id))) != nil {
+			h.service.Deps.Logger.Error(err)
 		}
 
-		if in && invalidateCache(h.service.Redis, pasteKey(uint16(id))) != nil {
-			h.service.Logger.Error(err)
+		if in && invalidateCache(h.service.Deps.Redis, pasteKey(uint16(id))) != nil {
+			h.service.Deps.Logger.Error(err)
 		}
 	}()
 }
@@ -275,14 +275,14 @@ func (h *Handler) CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.models.Pastes.Create(paste)
+	err = h.service.Models.Pastes.Create(paste)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return
 	}
 
 	if user := auth.ContextGetUser(r); !user.IsAnonymous() {
-		err = h.models.Permissions.SetWritePermission(user.ID, paste.Id)
+		err = h.service.Models.Permissions.SetWritePermission(user.ID, paste.Id)
 		if err != nil {
 			h.ServerErrorResponse(w, r, err)
 			return
@@ -298,13 +298,13 @@ func (h *Handler) CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.service.Background(func() {
-		if err = setCache(h.service.Redis, pasteKey(paste.Id), paste); err == nil {
-			if err = invalidateCache(h.service.Redis, "search:*"); err == nil {
-				h.service.Logger.Debugf("paste (ID: %d) added to cache", paste.Id)
+		if err = setCache(h.service.Deps.Redis, pasteKey(paste.Id), paste); err == nil {
+			if err = invalidateCache(h.service.Deps.Redis, "search:*"); err == nil {
+				h.service.Deps.Logger.Debugf("paste (ID: %d) added to cache", paste.Id)
 				return
 			}
 		}
-		h.service.Logger.Errorf("paste (ID: %d) not added to cache due to the error: %s", paste.Id, err)
+		h.service.Deps.Logger.Errorf("paste (ID: %d) not added to cache due to the error: %s", paste.Id, err)
 	})
 }
 
@@ -341,9 +341,9 @@ func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	paste := &models.Paste{}
-	err = getFromCache(h.service.Redis, pasteKey(uint16(id)), paste)
+	err = getFromCache(h.service.Deps.Redis, pasteKey(uint16(id)), paste)
 	if err != nil {
-		paste, err = h.models.Pastes.Read(uint16(id))
+		paste, err = h.service.Models.Pastes.Read(uint16(id))
 		if err != nil {
 			switch {
 			case errors.Is(err, repository.ErrRecordNotFound):
@@ -387,7 +387,7 @@ func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.models.Pastes.Update(paste)
+	err = h.service.Models.Pastes.Update(paste)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrEditConflict):
@@ -398,10 +398,10 @@ func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = setCache(h.service.Redis, pasteKey(paste.Id), paste); err != nil {
-		h.service.Logger.Errorf("paste (ID: %d) not added to cache due to the error: %s", paste.Id, err)
+	if err = setCache(h.service.Deps.Redis, pasteKey(paste.Id), paste); err != nil {
+		h.service.Deps.Logger.Errorf("paste (ID: %d) not added to cache due to the error: %s", paste.Id, err)
 	} else {
-		h.service.Logger.Debugf("paste (ID: %d) added to cache", paste.Id)
+		h.service.Deps.Logger.Debugf("paste (ID: %d) added to cache", paste.Id)
 	}
 
 	err = helpers.WriteJSON(w, http.StatusOK, helpers.Envelope{"paste": paste}, nil)
@@ -410,8 +410,8 @@ func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.service.Background(func() {
-		if err = invalidateCache(h.service.Redis, "search:*"); err != nil {
-			h.service.Logger.Error(err)
+		if err = invalidateCache(h.service.Deps.Redis, "search:*"); err != nil {
+			h.service.Deps.Logger.Error(err)
 		}
 	})
 }

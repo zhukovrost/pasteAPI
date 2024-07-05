@@ -61,7 +61,7 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.models.Users.Create(user)
+	err = h.service.Models.Users.Create(user)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrDuplicate):
@@ -73,7 +73,7 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.models.Tokens.New(user.ID, 8*time.Hour, repository.ScopeActivation)
+	token, err := h.service.Models.Tokens.New(user.ID, 8*time.Hour, repository.ScopeActivation)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return
@@ -86,17 +86,17 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 			"ID":             user.ID,
 			"Login":          user.Login,
 		}
-		err = h.service.Mailer.SendEmail(user.Email, "welcome.tmpl", tmplData)
+		err = h.service.Deps.Mailer.SendEmail(user.Email, "welcome.tmpl", tmplData)
 
 		if h.service.Config.Env == "development" {
-			h.service.Logger.Infof("New activation tocken for user %s (id: %d): %s. "+
+			h.service.Deps.Logger.Infof("New activation tocken for user %s (id: %d): %s. "+
 				"Go to (PUT) http://localhost:8080/api/v1/users/activated/ with token in th request body to activate user.",
 				user.Login, user.ID, token.Plaintext,
 			)
 		}
 
 		if err != nil {
-			h.service.Logger.Error(err)
+			h.service.Deps.Logger.Error(err)
 		}
 	})
 
@@ -139,7 +139,7 @@ func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.models.Users.GetForToken(repository.ScopeActivation, in.TokenPlainText)
+	user, err := h.service.Models.Users.GetForToken(repository.ScopeActivation, in.TokenPlainText)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrRecordNotFound):
@@ -153,7 +153,7 @@ func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	user.Activated = true
 
-	err = h.models.Users.Update(user)
+	err = h.service.Models.Users.Update(user)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrEditConflict):
@@ -164,7 +164,7 @@ func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.models.Tokens.DeleteAllForUser(repository.ScopeActivation, user.ID)
+	err = h.service.Models.Tokens.DeleteAllForUser(repository.ScopeActivation, user.ID)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return

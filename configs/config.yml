@@ -7,6 +7,8 @@ db:
   maxIdleConns: 10
   maxIdleTime: 10m
   dsn: <DSN>
+logger:
+  need_debug: true
 limiter:
   rps: 4
   burst: 8
@@ -15,8 +17,9 @@ smtp:
   host: smtp.mailtrap.io
   port: 2525
   user: 179f53d6893b87
-  sender: Paste <no-reply@https://github.com/zhukovrost/pasteAPI>
+  sender: Paste <no-reply>
   password: <PASSWORD>
+  timeout: 5s
 cors:
   trustedOrigins: ["https://zhukovrost.github.io/pasteAPI/*", "http://localhost:8080/*"]
 redis:
@@ -26,3 +29,10 @@ redis:
   db: 0
   timeout: 5s
   expiration: 15m
+#rabbitmq:
+#  url:
+#  wait_time: 5s
+#  attempts: 5
+#  exchange: emails
+#  exchange_type: direct
+#  queue: user_emails

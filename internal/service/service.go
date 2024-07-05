@@ -3,41 +3,60 @@ package service
 import (
 	"database/sql"
 	"github.com/sirupsen/logrus"
-	"github.com/zhukovrost/pasteAPI/internal/config"
+	"github.com/zhukovrost/pasteAPI/internal/repository"
 	"github.com/zhukovrost/pasteAPI/pkg/cache"
 	"github.com/zhukovrost/pasteAPI/pkg/mailer"
 	"sync"
 )
 
 type Service struct {
-	Config *config.Config
-	Logger *logrus.Logger
-	Mailer *mailer.Mailer
-	Redis  *cache.MyCache
-	DB     *sql.DB
-	Wg     sync.WaitGroup
+	*Config
+	Models *repository.Models
+	Deps   *Dependencies
+	Wg     *sync.WaitGroup
 }
 
-func New(cfg *config.Config, logger *logrus.Logger, mailer *mailer.Mailer, cache *cache.MyCache, db *sql.DB) *Service {
+type Config struct {
+	Host    string
+	Port    int
+	Env     string
+	Status  string
+	Limiter struct {
+		RPS     float64
+		Burst   int
+		Enabled bool
+	}
+	CORS struct {
+		TrustedOrigins []string
+	}
+	BuildTime string
+	Version   string
+}
+
+type Dependencies struct {
+	Logger *logrus.Logger
+	DB     *sql.DB
+	Mailer *mailer.Mailer
+	Redis  *cache.MyCache
+}
+
+func New(cfg *Config, deps *Dependencies, models *repository.Models) *Service {
 	return &Service{
 		Config: cfg,
-		Logger: logger,
-		Mailer: mailer,
-		Redis:  cache,
-		DB:     db,
-		Wg:     sync.WaitGroup{},
+		Deps:   deps,
+		Models: models,
+		Wg:     &sync.WaitGroup{},
 	}
 }
 
 func (s *Service) Background(fn func()) {
-	// TODO: rabbitmq
 	s.Wg.Add(1)
 	go func() {
 		defer s.Wg.Done()
 		// Recover any panic.
 		defer func() {
 			if err := recover(); err != nil {
-				s.Logger.Error(err)
+				s.Deps.Logger.Error(err)
 			}
 		}()
 

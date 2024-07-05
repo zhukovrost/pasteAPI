@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zhukovrost/pasteAPI/internal/autoclean"
-	"github.com/zhukovrost/pasteAPI/internal/config"
 	"github.com/zhukovrost/pasteAPI/internal/http"
 	"github.com/zhukovrost/pasteAPI/internal/http/v1"
 	"github.com/zhukovrost/pasteAPI/internal/service"
@@ -16,9 +15,9 @@ import (
 	"time"
 )
 
-func New(config *config.Config, handler *v1.Handler) *http.Server {
+func New(handler *v1.Handler, port int) *http.Server {
 	return &http.Server{
-		Addr:         fmt.Sprintf(":%d", config.Port),
+		Addr:         fmt.Sprintf(":%d", port),
 		Handler:      router.NewRouter(handler),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
@@ -38,7 +37,7 @@ func Run(server *http.Server, service *service.Service) error {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		s := <-quit
-		service.Logger.WithFields(map[string]interface{}{
+		service.Deps.Logger.WithFields(map[string]interface{}{
 			"signal": s.String(),
 		}).Info("caught signal")
 
@@ -51,12 +50,12 @@ func Run(server *http.Server, service *service.Service) error {
 		if err != nil {
 			shutdownError <- err
 		}
-		service.Logger.Info("completing background tasks")
+		service.Deps.Logger.Info("completing background tasks")
 		service.Wg.Wait()
 		shutdownError <- nil
 	}()
 
-	service.Logger.WithFields(map[string]interface{}{
+	service.Deps.Logger.WithFields(map[string]interface{}{
 		"addr": server.Addr,
 		"env":  service.Config.Env,
 	}).Info("starting server")
@@ -71,7 +70,7 @@ func Run(server *http.Server, service *service.Service) error {
 		return err
 	}
 
-	service.Logger.WithFields(map[string]interface{}{
+	service.Deps.Logger.WithFields(map[string]interface{}{
 		"addr": server.Addr,
 	}).Info("stopped server")
 
