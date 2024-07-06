@@ -17,7 +17,7 @@ func Start(ctx context.Context, s *service.Service) {
 		case <-ticker.C:
 			clean(ctx, s)
 		case <-ctx.Done():
-			s.Logger.Info("Stopping auto-cleaning...")
+			s.Deps.Logger.Info("Stopping auto-cleaning...")
 			return
 		}
 	}
@@ -31,10 +31,10 @@ func clean(ctx context.Context, s *service.Service) {
 		DELETE FROM tokens
 		WHERE expiry < NOW();`
 
-	_, err := s.DB.ExecContext(ctx, query)
-	s.Logger.Info("cleaning database...")
+	_, err := s.Deps.DB.ExecContext(ctx, query)
+	s.Deps.Logger.Info("cleaning database...")
 	if err != nil {
-		s.Logger.Errorf("Error while cleaning pastes and tokens: %v", err)
+		s.Deps.Logger.Errorf("Error while cleaning pastes and tokens: %v", err)
 	}
-	s.Logger.Info("database has been cleaned")
+	s.Deps.Logger.Info("database has been cleaned")
 }

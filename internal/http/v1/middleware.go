@@ -30,7 +30,7 @@ func (h *Handler) RecoverPanic(next http.Handler) http.Handler {
 
 func (h *Handler) DebugRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h.service.Logger.WithFields(map[string]interface{}{
+		h.service.Deps.Logger.WithFields(map[string]interface{}{
 			"request_method": r.Method,
 			"request_url":    r.URL.Path,
 		}).Debug("new request")
@@ -52,11 +52,11 @@ func (h *Handler) RateLimit(next http.Handler) http.Handler {
 		}
 
 		redisKey := fmt.Sprintf("client:%s", ip)
-		ctx, cancel := context.WithTimeout(context.Background(), h.service.Redis.DefaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), h.service.Deps.Redis.Timeout)
 		defer cancel()
 
 		// Increment the counter for this IP and set expiration if it's a new key
-		pipe := h.service.Redis.Cache.TxPipeline()
+		pipe := h.service.Deps.Redis.Cache.TxPipeline()
 		incr := pipe.Incr(ctx, redisKey)
 		pipe.Expire(ctx, redisKey, time.Second)
 		_, err = pipe.Exec(ctx)
@@ -85,14 +85,12 @@ func (h *Handler) Authenticate(next http.Handler) http.Handler {
 		w.Header().Add("Vary", "Authorization")
 		authorizationHeader := r.Header.Get("Authorization")
 
-		if h.service.Config.Env == "development" {
-			h.service.Logger.Debugf("Authorization header token is: %s", authorizationHeader)
-		}
-
 		if authorizationHeader == "" {
 			r = auth.ContextSetUser(r, models.AnonymousUser)
 			next.ServeHTTP(w, r)
 			return
+		} else {
+			h.service.Deps.Logger.Debugf("Authorization header token is: %s", authorizationHeader)
 		}
 
 		headerParts := strings.Split(authorizationHeader, " ")
@@ -108,7 +106,7 @@ func (h *Handler) Authenticate(next http.Handler) http.Handler {
 			return
 		}
 
-		user, err := h.models.Users.GetForToken(repository.ScopeAuthentication, token)
+		user, err := h.service.Models.Users.GetForToken(repository.ScopeAuthentication, token)
 		if err != nil {
 			switch {
 			case errors.Is(err, repository.ErrRecordNotFound):
@@ -156,7 +154,7 @@ func (h *Handler) RequireAllowedToWriteUser(next http.HandlerFunc) http.HandlerF
 			return
 		}
 
-		allowed, err := h.models.Permissions.GetWritePermission(user.ID, uint16(pasteId))
+		allowed, err := h.service.Models.Permissions.GetWritePermission(user.ID, uint16(pasteId))
 		if err != nil {
 			h.ServerErrorResponse(w, r, err)
 			return

@@ -13,7 +13,6 @@ import (
 var (
 	BuildTime         string
 	Version           string
-	NeedDebug         bool
 	ErrDisplayAndExit = errors.New("display Version and exit")
 )
 
@@ -33,13 +32,9 @@ type Config struct {
 		Burst   int     `yaml:"burst" envconfig:"API_LIMIT_BURST"`
 		Enabled bool    `yaml:"enabled" envconfig:"API_LIMIT_ENABLED"`
 	} `yaml:"limiter"`
-	SMTP struct {
-		Host     string `yaml:"host" envconfig:"PASTE_SMTP_HOST"`
-		Port     int    `yaml:"port" envconfig:"PASTE_SMTP_PORT"`
-		Username string `yaml:"user" envconfig:"PASTE_SMTP_USER"`
-		Password string `yaml:"password" envconfig:"PASTE_SMTP_PASSWORD"`
-		Sender   string `yaml:"sender" envconfig:"PASTE_SMTP_SENDER"`
-	} `yaml:"smtp"`
+	Logger struct {
+		NeedDebug bool `yaml:"need_debug" envconfig:"API_LOGGER_DEBUG"`
+	} `yaml:"logger"`
 	CORS struct {
 		TrustedOrigins []string `yaml:"trustedOrigins" envconfig:"PASTE_TRUSTED_ORIGINS"`
 	} `yaml:"cors"`
@@ -51,6 +46,15 @@ type Config struct {
 		Timeout    string `yaml:"timeout" envconfig:"PASTE_REDIS_TIMEOUT"`
 		Expiration string `yaml:"expiration" envconfig:"PASTE_REDIS_EXPIRATION"`
 	} `yaml:"redis"`
+	RabbitMQ struct {
+		URL          string `yaml:"url" envconfig:"RABBITMQ_URL"`
+		WaitTime     string `yaml:"wait_time" envconfig:"RABBITMQ_WAIT_TIME"`
+		Timeout      string `yaml:"timeout" envconfig:"RABBITMQ_TIMEOUT"`
+		Attempts     int    `yaml:"attempts" envconfig:"RABBITMQ_ATTEMPTS"`
+		Exchange     string `yaml:"exchange" envconfig:"RABBITMQ_EXCHANGE"`
+		ExchangeType string `yaml:"exchange_type" envconfig:"RABBITMQ_EXCHANGE_TYPE"`
+		Queue        string `yaml:"queue" envconfig:"RABBITMQ_QUEUE"`
+	} `yaml:"rabbitmq"`
 }
 
 func New() (*Config, error) {
@@ -104,11 +108,12 @@ func processFlags(cfg *Config) error {
 	flag.IntVar(&cfg.Limiter.Burst, "limiter-burst", cfg.Limiter.Burst, "Rate limiter maximum burst")
 	flag.BoolVar(&cfg.Limiter.Enabled, "limiter-enabled", cfg.Limiter.Enabled, "Enable rate limiter")
 
-	flag.StringVar(&cfg.SMTP.Host, "smtp-host", cfg.SMTP.Host, "SMTP host")
-	flag.IntVar(&cfg.SMTP.Port, "smtp-port", cfg.SMTP.Port, "SMTP port")
-	flag.StringVar(&cfg.SMTP.Username, "smtp-username", cfg.SMTP.Username, "SMTP username")
-	flag.StringVar(&cfg.SMTP.Password, "smtp-password", cfg.SMTP.Password, "SMTP password")
-	flag.StringVar(&cfg.SMTP.Sender, "smtp-sender", cfg.SMTP.Sender, "SMTP sender")
+	//flag.StringVar(&cfg.SMTP.Host, "smtp-host", cfg.SMTP.Host, "SMTP host")
+	//flag.IntVar(&cfg.SMTP.Port, "smtp-port", cfg.SMTP.Port, "SMTP port")
+	//flag.StringVar(&cfg.SMTP.Username, "smtp-username", cfg.SMTP.Username, "SMTP username")
+	//flag.StringVar(&cfg.SMTP.Password, "smtp-password", cfg.SMTP.Password, "SMTP password")
+	//flag.StringVar(&cfg.SMTP.Sender, "smtp-sender", cfg.SMTP.Sender, "SMTP sender")
+	//flag.StringVar(&cfg.SMTP.Timeout, "smtp-timout", cfg.SMTP.Timeout, "SMTP timeout")
 
 	flag.StringVar(&cfg.Redis.Host, "redis-address", cfg.Redis.Host, "Redis address")
 	flag.StringVar(&cfg.Redis.Port, "redis-port", cfg.Redis.Port, "Redis port")
@@ -117,7 +122,14 @@ func processFlags(cfg *Config) error {
 	flag.StringVar(&cfg.Redis.Timeout, "redis-timeout", cfg.Redis.Timeout, "Redis timeout")
 	flag.StringVar(&cfg.Redis.Expiration, "redis-expiration", cfg.Redis.Expiration, "Redis expiration duration")
 
-	flag.BoolVar(&NeedDebug, "debug", false, "turns on debug level (log)")
+	flag.StringVar(&cfg.RabbitMQ.URL, "rabbitmq-url", cfg.RabbitMQ.URL, "rabbitmq url")
+	flag.StringVar(&cfg.RabbitMQ.WaitTime, "rabbitmq-wait-time", cfg.RabbitMQ.WaitTime, "rabbitmq wait time between connection tries")
+	flag.IntVar(&cfg.RabbitMQ.Attempts, "rabbitmq-attempts", cfg.RabbitMQ.Attempts, "rabbitmq attempt amount to connect")
+	flag.StringVar(&cfg.RabbitMQ.Exchange, "rabbitmq-exchange", cfg.RabbitMQ.Exchange, "rabbitmq exchange")
+	flag.StringVar(&cfg.RabbitMQ.ExchangeType, "rabbitmq-exchange-type", cfg.RabbitMQ.ExchangeType, "rabbitmq exchange type")
+	flag.StringVar(&cfg.RabbitMQ.Queue, "rabbitmq-queue", cfg.RabbitMQ.Queue, "rabbitmq queue name")
+
+	flag.BoolVar(&cfg.Logger.NeedDebug, "debug", cfg.Logger.NeedDebug, "turns on debug level (log)")
 
 	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
 		cfg.CORS.TrustedOrigins = strings.Fields(val)

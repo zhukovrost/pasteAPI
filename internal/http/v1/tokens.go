@@ -52,7 +52,7 @@ func (h *Handler) CreateAuthenticationTokenHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	user, err := h.models.Users.GetByEmail(in.Email)
+	user, err := h.service.Models.Users.GetByEmail(in.Email)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrRecordNotFound):
@@ -74,7 +74,7 @@ func (h *Handler) CreateAuthenticationTokenHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	token, err := h.models.Tokens.New(user.ID, 24*time.Hour, repository.ScopeAuthentication)
+	token, err := h.service.Models.Tokens.New(user.ID, 24*time.Hour, repository.ScopeAuthentication)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return

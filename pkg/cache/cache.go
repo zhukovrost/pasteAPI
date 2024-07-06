@@ -7,9 +7,8 @@ import (
 )
 
 type MyCache struct {
-	Cache          *redis.Client
-	DefaultTimeout time.Duration
-	Expiration     time.Duration
+	Cache *redis.Client
+	Config
 }
 
 var (
@@ -17,35 +16,23 @@ var (
 	client *MyCache
 )
 
-func New(addr, password string, db int, timeout, expiration string) *MyCache {
+type Config struct {
+	Addr       string
+	Password   string
+	DB         int
+	Expiration time.Duration
+	Timeout    time.Duration
+}
+
+func New(c Config) *MyCache {
 	once.Do(func() {
 		cache := redis.NewClient(&redis.Options{
-			Addr:     addr,
-			Password: password,
-			DB:       db,
+			Addr:     c.Addr,
+			Password: c.Password,
+			DB:       c.DB,
 		})
 
-		defaultTimeout := 15 * time.Second
-
-		if timeout != "" {
-			newTimeout, err := time.ParseDuration(timeout)
-			if err != nil {
-				panic(err)
-			}
-			defaultTimeout = newTimeout
-		}
-
-		defaultExpiration := 15 * time.Minute
-
-		if expiration != "" {
-			newExp, err := time.ParseDuration(expiration)
-			if err != nil {
-				panic(err)
-			}
-			defaultExpiration = newExp
-		}
-
-		client = &MyCache{Cache: cache, DefaultTimeout: defaultTimeout, Expiration: defaultExpiration}
+		client = &MyCache{Cache: cache, Config: c}
 	})
 
 	return client

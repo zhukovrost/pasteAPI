@@ -6,17 +6,13 @@ db:
   maxOpenConns: 30
   maxIdleConns: 10
   maxIdleTime: 10m
-  dsn: <DSN>
+  dsn: postgres://pasteadmin:admin@localhost:5432/paste?sslmode=disable
+logger:
+  need_debug: true
 limiter:
   rps: 4
   burst: 8
   enabled: true
-smtp:
-  host: smtp.mailtrap.io
-  port: 2525
-  user: 179f53d6893b87
-  sender: Paste <no-reply@https://github.com/zhukovrost/pasteAPI>
-  password: <PASSWORD>
 cors:
   trustedOrigins: ["https://zhukovrost.github.io/pasteAPI/*", "http://localhost:8080/*"]
 redis:
@@ -26,3 +22,11 @@ redis:
   db: 0
   timeout: 5s
   expiration: 15m
+rabbitmq:
+  url: amqp://guest:guest@localhost:5672/
+  wait_time: 5s
+  timeout: 5s
+  attempts: 5
+  exchange: emails
+  exchange_type: direct
+  queue: user_emails

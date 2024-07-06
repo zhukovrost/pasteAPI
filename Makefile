@@ -32,19 +32,21 @@ confirm:
 ## dev/run/api: run the cmd/api application (development only)
 .PHONY: dev/run/api
 dev/run/api: # dev/services/start
-	@go run ./cmd/api -debug -db-dsn="postgres://pasteadmin:admin@localhost:5432/paste?sslmode=disable" -smtp-password=${PASTE_SMTP_PASSWORD} -redis-address="localhost" -env="development"
+	@go run ./cmd/api -debug -db-dsn="postgres://pasteadmin:admin@localhost:5432/paste?sslmode=disable" -rabbitmq-url="amqp://guest:guest@localhost:5672/" -redis-address="localhost"
 
 ## dev/services/start runs all services locally
 .PHONY: dev/services/start
 dev/services/start:
 	sudo systemctl start redis
 	sudo systemctl start postgresql
+	sudo systemctl start rabbitmq-server
 
 ## dev/services/stop stops all local services
 .PHONY: dev/services/stop
 dev/services/stop:
 	sudo systemctl stop redis
 	sudo systemctl stop postgresql
+	sudo systemctl stop rabbitmq-server
 
 ## db/psql: connect to the database using psql (development only)
 .PHONY: db/psql

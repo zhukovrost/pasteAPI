@@ -10,7 +10,7 @@ import (
 )
 
 func getFromCache(myCache *cache.MyCache, key string, result interface{}) error {
-	ctx, cancel := context.WithTimeout(context.Background(), myCache.DefaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), myCache.Timeout)
 	defer cancel()
 
 	data, err := myCache.Cache.Get(ctx, key).Bytes()
@@ -42,7 +42,7 @@ func getFromCache(myCache *cache.MyCache, key string, result interface{}) error 
 }
 
 func setCache(myCache *cache.MyCache, key string, value interface{}) error {
-	ctx, cancel := context.WithTimeout(context.Background(), myCache.DefaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), myCache.Timeout)
 	defer cancel()
 
 	data, err := json.Marshal(value)
@@ -59,7 +59,7 @@ func setCache(myCache *cache.MyCache, key string, value interface{}) error {
 }
 
 func existsInCache(myCache *cache.MyCache, key string) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), myCache.DefaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), myCache.Timeout)
 	defer cancel()
 
 	exists, err := myCache.Cache.Exists(ctx, key).Result()
@@ -71,14 +71,14 @@ func existsInCache(myCache *cache.MyCache, key string) (bool, error) {
 }
 
 func deleteFromCache(myCache *cache.MyCache, key string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), myCache.DefaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), myCache.Timeout)
 	defer cancel()
 
 	return myCache.Cache.Del(ctx, key).Err()
 }
 
 func invalidateCache(myCache *cache.MyCache, pattern string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), myCache.DefaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), myCache.Timeout)
 	defer cancel()
 
 	keys, err := myCache.Cache.Keys(ctx, pattern).Result()

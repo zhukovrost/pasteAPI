@@ -10,20 +10,19 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-#      rabbitmq:
-#        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     command: ["/api", "-debug=${NEED_DEBUG}"]
 
-#  email-sender:
-#    image: allbyk/task-traker-email-sender:latest
-#    restart: unless-stopped
-#    env_file: .env
-#    depends_on:
-#      postgres:
-#        condition: service_healthy
-#      rabbitmq:
-#        condition: service_healthy
+  email-sender:
+    image: zhukovrost/pasteapi-email-sender:0.1
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
 #  scheduler:
 #    image: allbyk/scheduler:latest
 #    restart: unless-stopped
@@ -33,17 +32,21 @@ services:
 #        condition: service_healthy
 #      rabbitmq:
 #        condition: service_healthy
-#  rabbitmq:
-#    image: rabbitmq:3-management-alpine
-#    container_name: 'rabbitmq'
-#    ports:
-#      - 5672:5672
-#      - 15672:15672
-#    healthcheck:
-#      test: ["CMD", "rabbitmqctl", "node_health_check"]
-#      interval: 30s
-#      retries: 3
-#      timeout: 10s
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    env_file:
+      - .env
+    ports:
+      - 5672:5672
+      - 15672:15672
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "node_health_check"]
+      interval: 30s
+      retries: 3
+      timeout: 10s
+
   postgres:
     image: postgres:latest
     env_file: .env
