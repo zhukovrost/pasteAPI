@@ -33,6 +33,7 @@ func (h *Handler) DebugRequest(next http.Handler) http.Handler {
 		h.service.Deps.Logger.WithFields(map[string]interface{}{
 			"request_method": r.Method,
 			"request_url":    r.URL.Path,
+			"origin":         r.Header.Get("Origin"),
 		}).Debug("new request")
 		next.ServeHTTP(w, r)
 	})
