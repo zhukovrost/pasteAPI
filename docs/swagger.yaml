@@ -103,6 +103,16 @@ definitions:
           $ref: '#/definitions/models.Paste'
         type: array
     type: object
+  v1.PastePermissionResponse:
+    properties:
+      permission:
+        properties:
+          paste_id:
+            type: integer
+          user_id:
+            type: integer
+        type: object
+    type: object
   v1.PasteResp:
     properties:
       paste:
@@ -224,6 +234,10 @@ paths:
       responses:
         "201":
           description: Successfully created paste
+          headers:
+            Location:
+              description: URL of the newly created paste
+              type: string
           schema:
             $ref: '#/definitions/v1.PasteResp'
         "400":
@@ -363,6 +377,50 @@ paths:
       summary: Update the paste
       tags:
       - pastes
+  /api/v1/pastes/{id}/permission/{user_id}:
+    put:
+      description: Gives a permission to user in the url to update / delete paste
+        in the url.
+      parameters:
+      - description: Paste ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully gave permission
+          headers:
+            Location:
+              description: URL of the newly created paste
+              type: string
+          schema:
+            $ref: '#/definitions/v1.PastePermissionResponse'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Gives a write permission
+      tags:
+      - pastes
+      - users
   /api/v1/tokens/authentication:
     post:
       consumes:

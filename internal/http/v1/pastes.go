@@ -3,6 +3,7 @@ package v1
 import (
 	"errors"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"github.com/redis/go-redis/v9"
 	"github.com/zhukovrost/pasteAPI/internal/auth"
 	"github.com/zhukovrost/pasteAPI/internal/repository"
@@ -10,6 +11,7 @@ import (
 	"github.com/zhukovrost/pasteAPI/pkg/helpers"
 	"github.com/zhukovrost/pasteAPI/pkg/validator"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -246,6 +248,7 @@ type CreatePasteInput struct {
 // @Param        body  body     CreatePasteInput  true  "Paste creation input"
 // @Security BearerAuth
 // @Success      201  {object}  PasteResp  "Successfully created paste"
+// @Header 201 {string} Location "URL of the newly created paste"
 // @Failure      400  {object}  ErrorResponse "Bad request"
 // @Failure      422  {object}  ErrorResponse "Unprocessable data"
 // @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
@@ -414,4 +417,60 @@ func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 			h.service.Deps.Logger.Error(err)
 		}
 	})
+}
+
+type PastePermissionResponse struct {
+	R struct {
+		P uint16 `json:"paste_id"`
+		U int64  `json:"user_id"`
+	} `json:"permission"`
+}
+
+// PermissionHandler gives a write permission by input data
+//
+// @Summary      Gives a write permission
+// @Description  Gives a permission to user in the url to update / delete paste in the url.
+// @Tags         pastes
+// @Tags         users
+// @Produce      json
+// @Param        id   path   int   true       "Paste ID"
+// @Param        user_id   path   int   true       "User ID"
+// @Security BearerAuth
+// @Success      200  {object}  PastePermissionResponse  "Successfully gave permission"
+// @Header 200 {string} Location "URL of the newly created paste"
+// @Failure      404  {object}  ErrorResponse "Not found"
+// @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/pastes/{id}/permission/{user_id} [put]
+func (h *Handler) PermissionHandler(w http.ResponseWriter, r *http.Request) {
+	pasteId, err := helpers.ReadIDParam(r)
+	if err != nil {
+		h.NotFoundResponse(w, r)
+		return
+	}
+
+	userIdStr := chi.URLParam(r, "user_id")
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
+	if err != nil || userId <= 0 {
+		h.NotFoundResponse(w, r)
+		return
+	}
+
+	if err = h.models.Permissions.SetWritePermission(userId, uint16(pasteId)); err != nil {
+		h.ServerErrorResponse(w, r, err)
+		return
+	}
+
+	headers := make(http.Header)
+	headers.Set("Location", fmt.Sprintf("api/v1/pastes/%d", pasteId))
+
+	resp := struct {
+		P uint16 `json:"paste_id"`
+		U int64  `json:"user_id"`
+	}{uint16(pasteId), userId}
+
+	err = helpers.WriteJSON(w, http.StatusOK, helpers.Envelope{"permission": resp}, headers)
+	if err != nil {
+		h.ServerErrorResponse(w, r, err)
+	}
 }
