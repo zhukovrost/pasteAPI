@@ -5,7 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/zhukovrost/pasteAPI/internal/repository"
 	"github.com/zhukovrost/pasteAPI/pkg/cache"
-	"github.com/zhukovrost/pasteAPI/pkg/mailer"
+	"github.com/zhukovrost/pasteAPI/pkg/rabbitmq"
 	"sync"
 )
 
@@ -36,7 +36,7 @@ type Config struct {
 type Dependencies struct {
 	Logger *logrus.Logger
 	DB     *sql.DB
-	Mailer *mailer.Mailer
+	Mailer *rabbitmq.Connection
 	Redis  *cache.MyCache
 }
 

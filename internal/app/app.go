@@ -9,8 +9,8 @@ import (
 	"github.com/zhukovrost/pasteAPI/internal/service"
 	"github.com/zhukovrost/pasteAPI/pkg/cache"
 	"github.com/zhukovrost/pasteAPI/pkg/logger"
-	"github.com/zhukovrost/pasteAPI/pkg/mailer"
 	"github.com/zhukovrost/pasteAPI/pkg/postgres"
+	"github.com/zhukovrost/pasteAPI/pkg/rabbitmq"
 
 	"time"
 )
@@ -18,19 +18,35 @@ import (
 func Run(cfg *config.Config) {
 	log := logger.New(cfg.Logger.NeedDebug)
 
-	mailerTimeout, err := time.ParseDuration(cfg.SMTP.Timeout)
+	log.Info("configuring mailer (RabbitMQ)")
+
+	mailerWaitTime, err := time.ParseDuration(cfg.RabbitMQ.WaitTime)
+	if err != nil {
+		mailerWaitTime = 5 * time.Second // default
+	}
+
+	mailerTimeout, err := time.ParseDuration(cfg.RabbitMQ.Timeout)
 	if err != nil {
 		mailerTimeout = 5 * time.Second // default
 	}
 
-	mailer := mailer.New(mailer.Config{
-		Host:     cfg.SMTP.Host,
-		Port:     cfg.SMTP.Port,
-		Username: cfg.SMTP.Username,
-		Password: cfg.SMTP.Password,
-		Sender:   cfg.SMTP.Sender,
-		Timeout:  mailerTimeout,
+	mailer, err := rabbitmq.New(rabbitmq.Config{
+		URL:          cfg.RabbitMQ.URL,
+		WaitTime:     mailerWaitTime,
+		Timeout:      mailerTimeout,
+		Attempts:     cfg.RabbitMQ.Attempts,
+		Exchange:     cfg.RabbitMQ.Exchange,
+		ExchangeType: cfg.RabbitMQ.ExchangeType,
+		Queue:        cfg.RabbitMQ.Queue,
 	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer mailer.Close()
+
+	log.Info("configuring cache (Redis)")
 
 	cacheExpiration, err := time.ParseDuration(cfg.Redis.Expiration)
 	if err != nil {
@@ -50,6 +66,8 @@ func Run(cfg *config.Config) {
 		Timeout:    cacheTimeout,
 	})
 	defer cache.CloseConn()
+
+	log.Info("configuring database (PostgreSQL)")
 
 	idleConnsDur, err := time.ParseDuration(cfg.DB.MaxIdleTime)
 	if err != nil {

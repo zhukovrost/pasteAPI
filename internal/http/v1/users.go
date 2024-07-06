@@ -1,10 +1,13 @@
 package v1
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"github.com/zhukovrost/pasteAPI/internal/repository"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
 	"github.com/zhukovrost/pasteAPI/pkg/helpers"
+	"github.com/zhukovrost/pasteAPI/pkg/rabbitmq"
 	"github.com/zhukovrost/pasteAPI/pkg/validator"
 	"net/http"
 	"time"
@@ -79,26 +82,37 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: rabbitmq
-	h.service.Background(func() {
-		tmplData := map[string]interface{}{
-			"activationCode": token.Plaintext,
-			"ID":             user.ID,
-			"Login":          user.Login,
-		}
-		err = h.service.Deps.Mailer.SendEmail(user.Email, "welcome.tmpl", tmplData)
+	if h.service.Config.Env == "development" {
+		h.service.Deps.Logger.Infof("New activation tocken for user %s (id: %d): %s. "+
+			"Go to (PUT) http://localhost:8080/api/v1/users/activated/ with token in th request body to activate user.",
+			user.Login, user.ID, token.Plaintext,
+		)
+	}
 
-		if h.service.Config.Env == "development" {
-			h.service.Deps.Logger.Infof("New activation tocken for user %s (id: %d): %s. "+
-				"Go to (PUT) http://localhost:8080/api/v1/users/activated/ with token in th request body to activate user.",
-				user.Login, user.ID, token.Plaintext,
-			)
-		}
+	email := rabbitmq.Email{
+		To: rabbitmq.Receiver{
+			Email: user.Email,
+			Login: user.Login,
+			ID:    user.ID,
+		},
+		Type:    rabbitmq.Activation,
+		Message: token.Plaintext,
+	}
 
-		if err != nil {
-			h.service.Deps.Logger.Error(err)
-		}
-	})
+	emailJSON, err := json.Marshal(email)
+	if err != nil {
+		h.ServerErrorResponse(w, r, err)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), h.service.Deps.Mailer.Timeout)
+	defer cancel()
+
+	err = h.service.Deps.Mailer.PublishMessage(ctx, "application/json", emailJSON)
+	if err != nil {
+		h.ServerErrorResponse(w, r, err)
+		return
+	}
 
 	err = helpers.WriteJSON(w, http.StatusAccepted, helpers.Envelope{"user": user}, nil)
 	if err != nil {

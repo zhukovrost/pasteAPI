@@ -1,4 +1,4 @@
-package ampq
+package rabbitmq
 
 import (
 	"fmt"
@@ -9,9 +9,14 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+const (
+	Activation EmailType = "activation"
+)
+
 type Config struct {
 	URL          string
 	WaitTime     time.Duration
+	Timeout      time.Duration
 	Attempts     int
 	Exchange     string
 	ExchangeType string
@@ -23,6 +28,20 @@ type Connection struct {
 	Connection *amqp.Connection
 	Channel    *amqp.Channel
 }
+
+type Email struct {
+	To      Receiver  `json:"to"`
+	Type    EmailType `json:"type"`
+	Message string    `json:"message"`
+}
+
+type Receiver struct {
+	Email string `json:"email"`
+	Login string `json:"login"`
+	ID    int64  `json:"id"`
+}
+
+type EmailType string
 
 func New(cfg Config) (*Connection, error) {
 	conn := &Connection{
