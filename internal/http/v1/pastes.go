@@ -456,7 +456,7 @@ func (h *Handler) PermissionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.models.Permissions.SetWritePermission(userId, uint16(pasteId)); err != nil {
+	if err = h.service.Models.Permissions.SetWritePermission(userId, uint16(pasteId)); err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return
 	}
