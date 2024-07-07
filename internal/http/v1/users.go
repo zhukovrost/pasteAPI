@@ -96,7 +96,7 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 			ID:    user.ID,
 		},
 		Type:    rabbitmq.Activation,
-		Message: token.Plaintext,
+		Message: h.service.Config.ActivationLink + token.Plaintext,
 	}
 
 	emailJSON, err := json.Marshal(email)

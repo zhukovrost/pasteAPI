@@ -17,11 +17,12 @@ type Service struct {
 }
 
 type Config struct {
-	Host    string
-	Port    int
-	Env     string
-	Status  string
-	Limiter struct {
+	Host           string
+	Port           int
+	Env            string
+	Status         string
+	ActivationLink string
+	Limiter        struct {
 		RPS     float64
 		Burst   int
 		Enabled bool

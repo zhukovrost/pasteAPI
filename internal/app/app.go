@@ -91,10 +91,11 @@ func Run(cfg *config.Config) {
 
 	service := service.New(
 		&service.Config{
-			Host:   cfg.Host,
-			Port:   cfg.Port,
-			Env:    cfg.Env,
-			Status: cfg.Status,
+			Host:           cfg.Host,
+			Port:           cfg.Port,
+			Env:            cfg.Env,
+			Status:         cfg.Status,
+			ActivationLink: cfg.ActivationLink,
 			Limiter: struct {
 				RPS     float64
 				Burst   int

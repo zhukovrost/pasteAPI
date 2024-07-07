@@ -17,11 +17,12 @@ var (
 )
 
 type Config struct {
-	Host   string `yaml:"host" envconfig:"ADDRESS"`
-	Port   int    `yaml:"port" envconfig:"PORT"`
-	Env    string `yaml:"env" envconfig:"ENVIRONMENT"`
-	Status string `yaml:"status" envconfig:"STATUS"`
-	DB     struct {
+	Host           string `yaml:"host" envconfig:"ADDRESS"`
+	Port           int    `yaml:"port" envconfig:"PORT"`
+	Env            string `yaml:"env" envconfig:"ENVIRONMENT"`
+	Status         string `yaml:"status" envconfig:"STATUS"`
+	ActivationLink string `yaml:"activation_link" envconfig:"PASTE_ACTIVATION_LINK"`
+	DB             struct {
 		DSN          string `yaml:"dsn" envconfig:"PASTE_DB_DSN"`
 		MaxOpenConns int    `yaml:"maxOpenConns" envconfig:"PASTE_DB_MAX_OPEN_CONNECTIONS"`
 		MaxIdleConns int    `yaml:"maxIdleConns" envconfig:"PASTE_DB_MAX_IDLE_CONNECTIONS"`
