@@ -22,6 +22,7 @@ type Config struct {
 	Env            string
 	Status         string
 	ActivationLink string
+	ResetLink      string
 	Limiter        struct {
 		RPS     float64
 		Burst   int

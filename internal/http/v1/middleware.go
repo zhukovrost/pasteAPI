@@ -102,7 +102,7 @@ func (h *Handler) Authenticate(next http.Handler) http.Handler {
 		token := headerParts[1]
 
 		v := validator.New()
-		if repository.ValidateTokenPlaintext(v, token); !v.Valid() {
+		if models.ValidateTokenPlaintext(v, token); !v.Valid() {
 			h.InvalidAuthenticationTokenResponse(w, r)
 			return
 		}

@@ -22,6 +22,7 @@ type Config struct {
 	Env            string `yaml:"env" envconfig:"ENVIRONMENT"`
 	Status         string `yaml:"status" envconfig:"STATUS"`
 	ActivationLink string `yaml:"activation_link" envconfig:"PASTE_ACTIVATION_LINK"`
+	ResetLink      string `yaml:"reset_link" envconfig:"PASTE_RESET_LINK"`
 	DB             struct {
 		DSN          string `yaml:"dsn" envconfig:"PASTE_DB_DSN"`
 		MaxOpenConns int    `yaml:"maxOpenConns" envconfig:"PASTE_DB_MAX_OPEN_CONNECTIONS"`

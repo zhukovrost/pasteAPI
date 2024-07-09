@@ -5,12 +5,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type password struct {
+type Password struct {
 	Plaintext *string
 	Hash      []byte
 }
 
-func (p *password) Set(plaintextPassword string) error {
+func (p *Password) Set(plaintextPassword string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(plaintextPassword), 12)
 	if err != nil {
 		return err
@@ -20,7 +20,7 @@ func (p *password) Set(plaintextPassword string) error {
 	return nil
 }
 
-func (p *password) Matches(plaintextPassword string) (bool, error) {
+func (p *Password) Matches(plaintextPassword string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword(p.Hash, []byte(plaintextPassword))
 	if err != nil {
 		switch {

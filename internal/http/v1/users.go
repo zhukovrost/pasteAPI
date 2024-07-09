@@ -84,7 +84,7 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	if h.service.Config.Env == "development" {
 		h.service.Deps.Logger.Infof("New activation tocken for user %s (id: %d): %s. "+
-			"Go to (PUT) http://localhost:8080/api/v1/users/activated/ with token in th request body to activate user.",
+			"Go to (PUT) http://localhost:8080/api/v1/users/activated with token in th request body to activate user.",
 			user.Login, user.ID, token.Plaintext,
 		)
 	}
@@ -148,7 +148,7 @@ func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	v := validator.New()
-	if repository.ValidateTokenPlaintext(v, in.TokenPlainText); !v.Valid() {
+	if models.ValidateTokenPlaintext(v, in.TokenPlainText); !v.Valid() {
 		h.FailedValidationResponse(w, r, v.Errors)
 		return
 	}
@@ -185,6 +185,89 @@ func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = helpers.WriteJSON(w, http.StatusOK, helpers.Envelope{"user": user}, nil)
+	if err != nil {
+		h.ServerErrorResponse(w, r, err)
+	}
+}
+
+type UpdatePasswordInput struct {
+	TokenPlainText string `json:"token"`
+	NewPassword    string `json:"password"`
+}
+
+type UpdatePasswordResponse struct {
+	Message string `json:"message"`
+}
+
+// UpdatePasswordHandler updates user's password by input token
+//
+// @Summary      Update password
+// @Description  Update user's password by input data.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        body  body     UpdatePasswordInput  true  "User activation input"
+// @Success      200  {object}  UpdatePasswordResponse  "Successfully reset"
+// @Failure      400  {object}  ErrorResponse "Bad request"
+// @Failure      422  {object}  ErrorResponse "Unprocessable data"
+// @Failure      429 {object} ErrorResponse "Too many requests, rate limit exceeded"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/users/password [put]
+func (h *Handler) UpdatePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	var in UpdatePasswordInput
+
+	err := helpers.ReadJSON(w, r, &in)
+	if err != nil {
+		h.BadRequestResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+	models.ValidateTokenPlaintext(v, in.TokenPlainText)
+	models.ValidatePasswordPlaintext(v, in.NewPassword)
+	if !v.Valid() {
+		h.FailedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	user, err := h.service.Models.Users.GetForToken(repository.ScopePasswordReset, in.TokenPlainText)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrRecordNotFound):
+			v.AddError("token", "invalid or expired activation token")
+			h.FailedValidationResponse(w, r, v.Errors)
+		default:
+			h.ServerErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	newPassword := models.Password{}
+	if err = newPassword.Set(in.NewPassword); err != nil {
+		h.ServerErrorResponse(w, r, err)
+		return
+	}
+
+	user.Password = newPassword
+
+	err = h.service.Models.Users.Update(user)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrEditConflict):
+			h.EditConflictResponse(w, r)
+		default:
+			h.ServerErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = h.service.Models.Tokens.DeleteAllForUser(repository.ScopePasswordReset, user.ID)
+	if err != nil {
+		h.ServerErrorResponse(w, r, err)
+		return
+	}
+
+	err = helpers.WriteJSON(w, http.StatusOK, helpers.Envelope{"message": "your password has been successfully reset"}, nil)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 	}
