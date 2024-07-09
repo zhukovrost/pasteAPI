@@ -36,9 +36,13 @@ func NewRouter(handler *v1.Handler) http.Handler {
 		r.Route("/users", func(r chi.Router) {
 			r.Post("/", handler.RegisterUserHandler)
 			r.Put("/activated", handler.ActivateUserHandler)
+			r.Put("/password", handler.UpdatePasswordHandler)
 		})
 
-		r.Post("/tokens/authentication", handler.CreateAuthenticationTokenHandler)
+		r.Route("/tokens", func(r chi.Router) {
+			r.Post("/authentication", handler.CreateAuthenticationTokenHandler)
+			r.Post("/password-reset", handler.PasswordResetTokenHandler)
+		})
 	})
 
 	return handler.Metrics(handler.RecoverPanic(handler.EnableCORS(handler.RateLimit(handler.Authenticate(handler.DebugRequest(r))))))

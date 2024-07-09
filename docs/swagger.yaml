@@ -127,6 +127,28 @@ definitions:
       password:
         type: string
     type: object
+  v1.ResetPasswordInput:
+    properties:
+      email:
+        type: string
+    type: object
+  v1.ResetPasswordResp:
+    properties:
+      message:
+        type: string
+    type: object
+  v1.UpdatePasswordInput:
+    properties:
+      password:
+        type: string
+      token:
+        type: string
+    type: object
+  v1.UpdatePasswordResponse:
+    properties:
+      message:
+        type: string
+    type: object
   v1.UpdatePasteInput:
     properties:
       category:
@@ -464,6 +486,46 @@ paths:
       tags:
       - users
       - tokens
+  /api/v1/tokens/password-reset:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new password reset token in the database by input email.
+        Sends a reset password email.
+      parameters:
+      - description: Input email
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.ResetPasswordInput'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Successfully accepted
+          schema:
+            $ref: '#/definitions/v1.ResetPasswordResp'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "422":
+          description: Unprocessable data
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Password reset
+      tags:
+      - users
+      - tokens
   /api/v1/users/:
     post:
       consumes:
@@ -538,6 +600,44 @@ paths:
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
       summary: Activation
+      tags:
+      - users
+  /api/v1/users/password:
+    put:
+      consumes:
+      - application/json
+      description: Update user's password by input data.
+      parameters:
+      - description: User activation input
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdatePasswordInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully reset
+          schema:
+            $ref: '#/definitions/v1.UpdatePasswordResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "422":
+          description: Unprocessable data
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Update password
       tags:
       - users
 schemes:

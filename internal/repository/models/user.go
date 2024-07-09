@@ -12,7 +12,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	Login     string    `json:"login"`
 	Email     string    `json:"email"`
-	Password  password  `json:"-"`
+	Password  Password  `json:"-"`
 	Activated bool      `json:"activated"`
 	Version   int       `json:"-"`
 }
@@ -27,9 +27,9 @@ func ValidateEmail(v *validator.Validator, email string) {
 }
 
 func ValidatePasswordPlaintext(v *validator.Validator, password string) {
-	v.Check(password != "", "password", "must be provided")
-	v.Check(len(password) >= 8, "password", "must be at least 8 bytes long")
-	v.Check(len(password) <= 72, "password", "must not be more than 72 bytes long")
+	v.Check(password != "", "Password", "must be provided")
+	v.Check(len(password) >= 8, "Password", "must be at least 8 bytes long")
+	v.Check(len(password) <= 72, "Password", "must not be more than 72 bytes long")
 }
 
 func ValidateLogin(v *validator.Validator, login string) {
@@ -46,6 +46,6 @@ func ValidateUser(v *validator.Validator, user *User) {
 	}
 
 	if user.Password.Hash == nil {
-		panic("missing password hash for user")
+		panic("missing Password hash for user")
 	}
 }

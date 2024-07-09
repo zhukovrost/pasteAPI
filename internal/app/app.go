@@ -96,6 +96,7 @@ func Run(cfg *config.Config) {
 			Env:            cfg.Env,
 			Status:         cfg.Status,
 			ActivationLink: cfg.ActivationLink,
+			ResetLink:      cfg.ResetLink,
 			Limiter: struct {
 				RPS     float64
 				Burst   int

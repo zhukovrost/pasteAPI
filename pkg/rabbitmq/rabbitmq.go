@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	Activation EmailType = "activation"
+	Activation    EmailType = "activation"
+	PasswordReset EmailType = "password-reset"
 )
 
 type Config struct {

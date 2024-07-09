@@ -4,19 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
-	"github.com/zhukovrost/pasteAPI/pkg/validator"
 	"time"
 )
 
 const (
 	ScopeActivation     = "activation"
 	ScopeAuthentication = "authentication"
+	ScopePasswordReset  = "password-reset"
 )
-
-func ValidateTokenPlaintext(v *validator.Validator, plaintext string) {
-	v.Check(plaintext != "", "token", "must be provided")
-	v.Check(len(plaintext) == 26, "token", "must be 26 bytes long")
-}
 
 type TokenModel struct {
 	DB *sql.DB

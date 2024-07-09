@@ -494,6 +494,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/tokens/password-reset": {
+            "post": {
+                "description": "Creates a new password reset token in the database by input email. Sends a reset password email.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users",
+                    "tokens"
+                ],
+                "summary": "Password reset",
+                "parameters": [
+                    {
+                        "description": "Input email",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.ResetPasswordInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Successfully accepted",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ResetPasswordResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable data",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/": {
             "post": {
                 "description": "Creates a new user in the database by input data.",
@@ -581,6 +640,64 @@ const docTemplate = `{
                         "description": "Successfully accepted",
                         "schema": {
                             "$ref": "#/definitions/v1.UserResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable data",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/password": {
+            "put": {
+                "description": "Update user's password by input data.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update password",
+                "parameters": [
+                    {
+                        "description": "User activation input",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdatePasswordInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully reset",
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdatePasswordResponse"
                         }
                     },
                     "400": {
@@ -808,6 +925,41 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ResetPasswordInput": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ResetPasswordResp": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.UpdatePasswordInput": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.UpdatePasswordResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
                     "type": "string"
                 }
             }

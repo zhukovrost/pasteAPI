@@ -31,3 +31,4 @@ rabbitmq:
   exchange_type: direct
   queue: user_emails
 activation_link: http://localhost:8081/activate?token=
+reset_link: http://localhost:8081/password_reset?token=
