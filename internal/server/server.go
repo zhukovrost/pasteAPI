@@ -26,7 +26,7 @@ func New(handler *v1.Handler, port int) *http.Server {
 }
 
 // Run function runs the server with a graceful shutdown
-func Run(server *http.Server, service *service.Service) error {
+func Run(server *http.Server, service *service.Services) error {
 	shutdownError := make(chan error)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -51,7 +51,7 @@ func Run(server *http.Server, service *service.Service) error {
 			shutdownError <- err
 		}
 		service.Deps.Logger.Info("completing background tasks")
-		service.Wg.Wait()
+		service.Deps.Wg.Wait()
 		shutdownError <- nil
 	}()
 

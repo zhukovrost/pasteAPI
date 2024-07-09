@@ -15,11 +15,24 @@ type Config struct {
 	MaxIdleConns int
 }
 
+type Database interface {
+	OpenDB(c Config) error
+	Stats() sql.DBStats
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+	Close() error
+}
+
+type Connection struct {
+	*sql.DB
+}
+
 // OpenDB function returns a sql.DB connection pool.
-func OpenDB(c Config) (*sql.DB, error) {
+func (conn *Connection) OpenDB(c Config) error {
 	db, err := sql.Open("postgres", c.DSN)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	db.SetConnMaxIdleTime(c.MaxIdleTime)
@@ -31,8 +44,9 @@ func OpenDB(c Config) (*sql.DB, error) {
 
 	err = db.PingContext(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return db, nil
+	conn.DB = db
+	return nil
 }

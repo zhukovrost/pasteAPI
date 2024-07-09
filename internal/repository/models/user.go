@@ -21,23 +21,23 @@ func (u *User) IsAnonymous() bool {
 	return u == AnonymousUser
 }
 
-func ValidateEmail(v *validator.Validator, email string) {
+func ValidateEmail(v *validator.MyValidator, email string) {
 	v.Check(email != "", "email", "must be provided")
 	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
 }
 
-func ValidatePasswordPlaintext(v *validator.Validator, password string) {
+func ValidatePasswordPlaintext(v *validator.MyValidator, password string) {
 	v.Check(password != "", "Password", "must be provided")
 	v.Check(len(password) >= 8, "Password", "must be at least 8 bytes long")
 	v.Check(len(password) <= 72, "Password", "must not be more than 72 bytes long")
 }
 
-func ValidateLogin(v *validator.Validator, login string) {
+func ValidateLogin(v *validator.MyValidator, login string) {
 	v.Check(login != "", "login", "must be provided")
 	v.Check(validator.Matches(login, validator.LoginRX), "login", "contains incorrect symbols")
 }
 
-func ValidateUser(v *validator.Validator, user *User) {
+func ValidateUser(v *validator.MyValidator, user *User) {
 	ValidateLogin(v, user.Login)
 	ValidateEmail(v, user.Email)
 

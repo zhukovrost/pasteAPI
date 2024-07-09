@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
+	"github.com/zhukovrost/pasteAPI/pkg/postgres"
 	"time"
 )
 
@@ -14,7 +14,7 @@ const (
 )
 
 type TokenModel struct {
-	DB *sql.DB
+	DB postgres.Database
 }
 
 func (m TokenModel) New(userID int64, ttl time.Duration, scope string) (*models.Token, error) {

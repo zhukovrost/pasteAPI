@@ -64,7 +64,7 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.Models.Users.Create(user)
+	err = h.services.Deps.Models.Users.Create(user)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrDuplicate):
@@ -76,14 +76,14 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.service.Models.Tokens.New(user.ID, 8*time.Hour, repository.ScopeActivation)
+	token, err := h.services.Deps.Models.Tokens.New(user.ID, 8*time.Hour, repository.ScopeActivation)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return
 	}
 
-	if h.service.Config.Env == "development" {
-		h.service.Deps.Logger.Infof("New activation tocken for user %s (id: %d): %s. "+
+	if h.services.Config.Env == "development" {
+		h.services.Deps.Logger.Infof("New activation tocken for user %s (id: %d): %s. "+
 			"Go to (PUT) http://localhost:8080/api/v1/users/activated with token in th request body to activate user.",
 			user.Login, user.ID, token.Plaintext,
 		)
@@ -96,7 +96,7 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 			ID:    user.ID,
 		},
 		Type:    rabbitmq.Activation,
-		Message: h.service.Config.ActivationLink + token.Plaintext,
+		Message: h.services.Config.ActivationLink + token.Plaintext,
 	}
 
 	emailJSON, err := json.Marshal(email)
@@ -105,10 +105,10 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), h.service.Deps.Mailer.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), h.services.Deps.Mailer.Timeout)
 	defer cancel()
 
-	err = h.service.Deps.Mailer.PublishMessage(ctx, "application/json", emailJSON)
+	err = h.services.Deps.Mailer.PublishMessage(ctx, "application/json", emailJSON)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return
@@ -153,7 +153,7 @@ func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.Models.Users.GetForToken(repository.ScopeActivation, in.TokenPlainText)
+	user, err := h.services.Deps.Models.Users.GetForToken(repository.ScopeActivation, in.TokenPlainText)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrRecordNotFound):
@@ -167,7 +167,7 @@ func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	user.Activated = true
 
-	err = h.service.Models.Users.Update(user)
+	err = h.services.Deps.Models.Users.Update(user)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrEditConflict):
@@ -178,7 +178,7 @@ func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.Models.Tokens.DeleteAllForUser(repository.ScopeActivation, user.ID)
+	err = h.services.Deps.Models.Tokens.DeleteAllForUser(repository.ScopeActivation, user.ID)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return
@@ -230,7 +230,7 @@ func (h *Handler) UpdatePasswordHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := h.service.Models.Users.GetForToken(repository.ScopePasswordReset, in.TokenPlainText)
+	user, err := h.services.Deps.Models.Users.GetForToken(repository.ScopePasswordReset, in.TokenPlainText)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrRecordNotFound):
@@ -250,7 +250,7 @@ func (h *Handler) UpdatePasswordHandler(w http.ResponseWriter, r *http.Request) 
 
 	user.Password = newPassword
 
-	err = h.service.Models.Users.Update(user)
+	err = h.services.Deps.Models.Users.Update(user)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrEditConflict):
@@ -261,7 +261,7 @@ func (h *Handler) UpdatePasswordHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.service.Models.Tokens.DeleteAllForUser(repository.ScopePasswordReset, user.ID)
+	err = h.services.Deps.Models.Tokens.DeleteAllForUser(repository.ScopePasswordReset, user.ID)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return

@@ -55,7 +55,7 @@ func (h *Handler) CreateAuthenticationTokenHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	user, err := h.service.Models.Users.GetByEmail(in.Email)
+	user, err := h.services.Deps.Models.Users.GetByEmail(in.Email)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrRecordNotFound):
@@ -77,7 +77,7 @@ func (h *Handler) CreateAuthenticationTokenHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	token, err := h.service.Models.Tokens.New(user.ID, 24*time.Hour, repository.ScopeAuthentication)
+	token, err := h.services.Deps.Models.Tokens.New(user.ID, 24*time.Hour, repository.ScopeAuthentication)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return
@@ -128,7 +128,7 @@ func (h *Handler) PasswordResetTokenHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	user, err := h.service.Models.Users.GetByEmail(in.Email)
+	user, err := h.services.Deps.Models.Users.GetByEmail(in.Email)
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrRecordNotFound):
@@ -146,14 +146,14 @@ func (h *Handler) PasswordResetTokenHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	token, err := h.service.Models.Tokens.New(user.ID, 45*time.Minute, repository.ScopePasswordReset)
+	token, err := h.services.Deps.Models.Tokens.New(user.ID, 45*time.Minute, repository.ScopePasswordReset)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return
 	}
 
-	if h.service.Config.Env == "development" {
-		h.service.Deps.Logger.Infof("New reset password tocken for user %s (id: %d): %s. "+
+	if h.services.Config.Env == "development" {
+		h.services.Deps.Logger.Infof("New reset password tocken for user %s (id: %d): %s. "+
 			"Go to (PUT) http://localhost:8080/api/v1/users/password with token and new password in th request body to reset user's password.",
 			user.Login, user.ID, token.Plaintext,
 		)
@@ -166,7 +166,7 @@ func (h *Handler) PasswordResetTokenHandler(w http.ResponseWriter, r *http.Reque
 			ID:    user.ID,
 		},
 		Type:    rabbitmq.PasswordReset,
-		Message: h.service.Config.ResetLink + token.Plaintext,
+		Message: h.services.Config.ResetLink + token.Plaintext,
 	}
 
 	emailJSON, err := json.Marshal(email)
@@ -175,10 +175,10 @@ func (h *Handler) PasswordResetTokenHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), h.service.Deps.Mailer.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), h.services.Deps.Mailer.Timeout)
 	defer cancel()
 
-	err = h.service.Deps.Mailer.PublishMessage(ctx, "application/json", emailJSON)
+	err = h.services.Deps.Mailer.PublishMessage(ctx, "application/json", emailJSON)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 		return

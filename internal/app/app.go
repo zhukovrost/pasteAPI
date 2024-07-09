@@ -11,6 +11,7 @@ import (
 	"github.com/zhukovrost/pasteAPI/pkg/logger"
 	"github.com/zhukovrost/pasteAPI/pkg/postgres"
 	"github.com/zhukovrost/pasteAPI/pkg/rabbitmq"
+	"sync"
 
 	"time"
 )
@@ -65,7 +66,7 @@ func Run(cfg *config.Config) {
 		Expiration: cacheExpiration,
 		Timeout:    cacheTimeout,
 	})
-	defer cache.CloseConn()
+	defer cache.Close()
 
 	log.Info("configuring database (PostgreSQL)")
 
@@ -74,7 +75,8 @@ func Run(cfg *config.Config) {
 		idleConnsDur = 10 * time.Minute // default
 	}
 
-	db, err := postgres.OpenDB(postgres.Config{
+	db := &postgres.Connection{}
+	err = db.OpenDB(postgres.Config{
 		DSN:          cfg.DB.DSN,
 		MaxIdleTime:  idleConnsDur,
 		MaxOpenConns: cfg.DB.MaxOpenConns,
@@ -89,8 +91,10 @@ func Run(cfg *config.Config) {
 
 	log.Info("service connections are established")
 
+	models := repository.NewModels(db)
+
 	service := service.New(
-		&service.Config{
+		service.Config{
 			Host:           cfg.Host,
 			Port:           cfg.Port,
 			Env:            cfg.Env,
@@ -106,13 +110,14 @@ func Run(cfg *config.Config) {
 			BuildTime: config.BuildTime,
 			Version:   config.Version,
 		},
-		&service.Dependencies{
+		service.Dependencies{
 			Logger: log,
 			DB:     db,
 			Mailer: mailer,
 			Redis:  cache,
+			Models: models,
+			Wg:     &sync.WaitGroup{},
 		},
-		repository.NewModels(db),
 	)
 
 	handler := v1.NewHandler(service)

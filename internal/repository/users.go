@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
+	"github.com/zhukovrost/pasteAPI/pkg/postgres"
 	"strings"
 	"time"
 )
@@ -15,7 +16,7 @@ var (
 )
 
 type UserModel struct {
-	DB *sql.DB
+	DB postgres.Database
 }
 
 func (m *UserModel) Create(user *models.User) error {

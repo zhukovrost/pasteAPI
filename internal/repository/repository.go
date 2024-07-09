@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"database/sql"
 	"errors"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
+	"github.com/zhukovrost/pasteAPI/pkg/postgres"
 	"time"
 )
 
@@ -21,8 +21,8 @@ type Users interface {
 
 type Pastes interface {
 	Create(p *models.Paste) error
-	Read(id uint16) (*models.Paste, error)
-	ReadAll(title string, category uint8, filters models.Filters) ([]*models.Paste, *models.Metadata, error)
+	Read(id uint16, user *models.User) (*models.Paste, error)
+	ReadAll(title string, category uint8, user *models.User, filters models.Filters) ([]*models.Paste, *models.Metadata, error)
 	Update(p *models.Paste) error
 	Delete(id uint16) error
 }
@@ -34,7 +34,7 @@ type Tokens interface {
 
 type Permissions interface {
 	SetWritePermission(userId int64, pasteId uint16) error
-	GetWritePermission(userId int64, pasteId uint16) (bool, error)
+	CheckWritePermission(userId int64, pasteId uint16) (bool, error)
 }
 
 type Models struct {
@@ -44,7 +44,7 @@ type Models struct {
 	Permissions Permissions
 }
 
-func NewModels(db *sql.DB) *Models {
+func NewModels(db postgres.Database) *Models {
 	return &Models{
 		Pastes:      &PasteModel{DB: db},
 		Users:       &UserModel{DB: db},

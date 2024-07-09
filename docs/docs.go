@@ -93,7 +93,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully retrieved paste",
                         "schema": {
-                            "$ref": "#/definitions/v1.ListPastesOutput"
+                            "$ref": "#/definitions/service.ListPastesOutput"
                         }
                     },
                     "422": {
@@ -140,7 +140,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.CreatePasteInput"
+                            "$ref": "#/definitions/service.CreatePasteInput"
                         }
                     }
                 ],
@@ -148,7 +148,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Successfully created paste",
                         "schema": {
-                            "$ref": "#/definitions/v1.PasteResp"
+                            "$ref": "#/definitions/service.PasteResp"
                         },
                         "headers": {
                             "Location": {
@@ -207,7 +207,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully retrieved paste",
                         "schema": {
-                            "$ref": "#/definitions/v1.PasteResp"
+                            "$ref": "#/definitions/service.PasteResp"
                         }
                     },
                     "404": {
@@ -313,7 +313,7 @@ const docTemplate = `{
                         "name": "body",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/v1.UpdatePasteInput"
+                            "$ref": "#/definitions/service.UpdatePasteInput"
                         }
                     }
                 ],
@@ -321,7 +321,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully updated paste",
                         "schema": {
-                            "$ref": "#/definitions/v1.PasteResp"
+                            "$ref": "#/definitions/service.PasteResp"
                         }
                     },
                     "400": {
@@ -338,6 +338,12 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/v1.ErrorResponse"
                         }
@@ -399,13 +405,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully gave permission",
                         "schema": {
-                            "$ref": "#/definitions/v1.PastePermissionResponse"
-                        },
-                        "headers": {
-                            "Location": {
-                                "type": "string",
-                                "description": "URL of the newly created paste"
-                            }
+                            "$ref": "#/definitions/service.PastePermissionResponse"
                         }
                     },
                     "404": {
@@ -752,6 +752,9 @@ const docTemplate = `{
         "models.Paste": {
             "type": "object",
             "properties": {
+                "can_edit": {
+                    "type": "boolean"
+                },
                 "category": {
                     "type": "integer"
                 },
@@ -771,6 +774,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.Permission": {
+            "type": "object",
+            "properties": {
+                "paste_id": {
+                    "type": "integer"
+                },
+                "user_id": {
                     "type": "integer"
                 }
             }
@@ -806,6 +820,70 @@ const docTemplate = `{
                 }
             }
         },
+        "service.CreatePasteInput": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "integer"
+                },
+                "minutes": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.ListPastesOutput": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "$ref": "#/definitions/models.Metadata"
+                },
+                "pastes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Paste"
+                    }
+                }
+            }
+        },
+        "service.PastePermissionResponse": {
+            "type": "object",
+            "properties": {
+                "permission": {
+                    "$ref": "#/definitions/models.Permission"
+                }
+            }
+        },
+        "service.PasteResp": {
+            "type": "object",
+            "properties": {
+                "paste": {
+                    "$ref": "#/definitions/models.Paste"
+                }
+            }
+        },
+        "service.UpdatePasteInput": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "integer"
+                },
+                "minutes": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.ActivateUserInput": {
             "type": "object",
             "properties": {
@@ -833,23 +911,6 @@ const docTemplate = `{
                 }
             }
         },
-        "v1.CreatePasteInput": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "integer"
-                },
-                "minutes": {
-                    "type": "integer"
-                },
-                "text": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -874,44 +935,6 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                }
-            }
-        },
-        "v1.ListPastesOutput": {
-            "type": "object",
-            "properties": {
-                "metadata": {
-                    "$ref": "#/definitions/models.Metadata"
-                },
-                "pastes": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Paste"
-                    }
-                }
-            }
-        },
-        "v1.PastePermissionResponse": {
-            "type": "object",
-            "properties": {
-                "permission": {
-                    "type": "object",
-                    "properties": {
-                        "paste_id": {
-                            "type": "integer"
-                        },
-                        "user_id": {
-                            "type": "integer"
-                        }
-                    }
-                }
-            }
-        },
-        "v1.PasteResp": {
-            "type": "object",
-            "properties": {
-                "paste": {
-                    "$ref": "#/definitions/models.Paste"
                 }
             }
         },
@@ -960,23 +983,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.UpdatePasteInput": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "integer"
-                },
-                "minutes": {
-                    "type": "integer"
-                },
-                "text": {
-                    "type": "string"
-                },
-                "title": {
                     "type": "string"
                 }
             }

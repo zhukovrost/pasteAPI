@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func Start(ctx context.Context, s *service.Service) {
+func Start(ctx context.Context, s *service.Services) {
 	ticker := time.NewTicker(time.Hour * 1)
 	defer ticker.Stop()
 
@@ -23,7 +23,7 @@ func Start(ctx context.Context, s *service.Service) {
 	}
 }
 
-func clean(ctx context.Context, s *service.Service) {
+func clean(ctx context.Context, s *service.Services) {
 	query := `
 		DELETE FROM pastes
 		WHERE expires_at < NOW();

@@ -2,12 +2,12 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	"github.com/zhukovrost/pasteAPI/pkg/postgres"
 	"time"
 )
 
 type PermissionModel struct {
-	DB *sql.DB
+	DB postgres.Database
 }
 
 func (m *PermissionModel) SetWritePermission(userId int64, pasteId uint16) error {
@@ -22,7 +22,7 @@ func (m *PermissionModel) SetWritePermission(userId int64, pasteId uint16) error
 	return err
 }
 
-func (m *PermissionModel) GetWritePermission(userId int64, pasteId uint16) (bool, error) {
+func (m *PermissionModel) CheckWritePermission(userId int64, pasteId uint16) (bool, error) {
 	query := `
 		SELECT EXISTS (
             SELECT 1

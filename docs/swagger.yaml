@@ -14,6 +14,8 @@ definitions:
     type: object
   models.Paste:
     properties:
+      can_edit:
+        type: boolean
       category:
         type: integer
       created_at:
@@ -27,6 +29,13 @@ definitions:
       title:
         type: string
       version:
+        type: integer
+    type: object
+  models.Permission:
+    properties:
+      paste_id:
+        type: integer
+      user_id:
         type: integer
     type: object
   models.Token:
@@ -49,6 +58,47 @@ definitions:
       login:
         type: string
     type: object
+  service.CreatePasteInput:
+    properties:
+      category:
+        type: integer
+      minutes:
+        type: integer
+      text:
+        type: string
+      title:
+        type: string
+    type: object
+  service.ListPastesOutput:
+    properties:
+      metadata:
+        $ref: '#/definitions/models.Metadata'
+      pastes:
+        items:
+          $ref: '#/definitions/models.Paste'
+        type: array
+    type: object
+  service.PastePermissionResponse:
+    properties:
+      permission:
+        $ref: '#/definitions/models.Permission'
+    type: object
+  service.PasteResp:
+    properties:
+      paste:
+        $ref: '#/definitions/models.Paste'
+    type: object
+  service.UpdatePasteInput:
+    properties:
+      category:
+        type: integer
+      minutes:
+        type: integer
+      text:
+        type: string
+      title:
+        type: string
+    type: object
   v1.ActivateUserInput:
     properties:
       token:
@@ -66,17 +116,6 @@ definitions:
       authentication_token:
         $ref: '#/definitions/models.Token'
     type: object
-  v1.CreatePasteInput:
-    properties:
-      category:
-        type: integer
-      minutes:
-        type: integer
-      text:
-        type: string
-      title:
-        type: string
-    type: object
   v1.ErrorResponse:
     properties:
       error:
@@ -93,30 +132,6 @@ definitions:
           version:
             type: string
         type: object
-    type: object
-  v1.ListPastesOutput:
-    properties:
-      metadata:
-        $ref: '#/definitions/models.Metadata'
-      pastes:
-        items:
-          $ref: '#/definitions/models.Paste'
-        type: array
-    type: object
-  v1.PastePermissionResponse:
-    properties:
-      permission:
-        properties:
-          paste_id:
-            type: integer
-          user_id:
-            type: integer
-        type: object
-    type: object
-  v1.PasteResp:
-    properties:
-      paste:
-        $ref: '#/definitions/models.Paste'
     type: object
   v1.RegistrationInput:
     properties:
@@ -147,17 +162,6 @@ definitions:
   v1.UpdatePasswordResponse:
     properties:
       message:
-        type: string
-    type: object
-  v1.UpdatePasteInput:
-    properties:
-      category:
-        type: integer
-      minutes:
-        type: integer
-      text:
-        type: string
-      title:
         type: string
     type: object
   v1.UserResp:
@@ -224,7 +228,7 @@ paths:
         "200":
           description: Successfully retrieved paste
           schema:
-            $ref: '#/definitions/v1.ListPastesOutput'
+            $ref: '#/definitions/service.ListPastesOutput'
         "422":
           description: Unprocessing data
           schema:
@@ -250,7 +254,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/v1.CreatePasteInput'
+          $ref: '#/definitions/service.CreatePasteInput'
       produces:
       - application/json
       responses:
@@ -261,7 +265,7 @@ paths:
               description: URL of the newly created paste
               type: string
           schema:
-            $ref: '#/definitions/v1.PasteResp'
+            $ref: '#/definitions/service.PasteResp'
         "400":
           description: Bad request
           schema:
@@ -332,7 +336,7 @@ paths:
         "200":
           description: Successfully retrieved paste
           schema:
-            $ref: '#/definitions/v1.PasteResp'
+            $ref: '#/definitions/service.PasteResp'
         "404":
           description: Paste not found
           schema:
@@ -362,14 +366,14 @@ paths:
         in: body
         name: body
         schema:
-          $ref: '#/definitions/v1.UpdatePasteInput'
+          $ref: '#/definitions/service.UpdatePasteInput'
       produces:
       - application/json
       responses:
         "200":
           description: Successfully updated paste
           schema:
-            $ref: '#/definitions/v1.PasteResp'
+            $ref: '#/definitions/service.PasteResp'
         "400":
           description: Bad request
           schema:
@@ -380,6 +384,10 @@ paths:
             $ref: '#/definitions/v1.ErrorResponse'
         "404":
           description: Not found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
         "422":
@@ -419,12 +427,8 @@ paths:
       responses:
         "200":
           description: Successfully gave permission
-          headers:
-            Location:
-              description: URL of the newly created paste
-              type: string
           schema:
-            $ref: '#/definitions/v1.PastePermissionResponse'
+            $ref: '#/definitions/service.PastePermissionResponse'
         "404":
           description: Not found
           schema:

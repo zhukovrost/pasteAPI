@@ -26,9 +26,9 @@ type HealthCheckOutput struct {
 // @Router       /api/v1/healthcheck [get]
 func (h *Handler) HealthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	env := helpers.Envelope{
-		"status": h.service.Config.Status,
+		"status": h.services.Config.Status,
 		"system_info": map[string]string{
-			"environment": h.service.Config.Env,
+			"environment": h.services.Config.Env,
 			"version":     config.Version,
 		},
 	}

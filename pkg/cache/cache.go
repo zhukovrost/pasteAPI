@@ -7,7 +7,7 @@ import (
 )
 
 type MyCache struct {
-	Cache *redis.Client
+	*redis.Client
 	Config
 }
 
@@ -32,12 +32,8 @@ func New(c Config) *MyCache {
 			DB:       c.DB,
 		})
 
-		client = &MyCache{Cache: cache, Config: c}
+		client = &MyCache{Client: cache, Config: c}
 	})
 
 	return client
-}
-
-func (c *MyCache) CloseConn() error {
-	return c.Cache.Close()
 }
