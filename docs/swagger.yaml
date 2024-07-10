@@ -95,6 +95,11 @@ definitions:
           $ref: '#/definitions/models.Paste'
         type: array
     type: object
+  service.MessageResp:
+    properties:
+      message:
+        type: string
+    type: object
   service.PastePermissionResponse:
     properties:
       permission:
@@ -119,21 +124,11 @@ definitions:
       email:
         type: string
     type: object
-  service.ResetPasswordResp:
-    properties:
-      message:
-        type: string
-    type: object
   service.UpdatePasswordInput:
     properties:
       password:
         type: string
       token:
-        type: string
-    type: object
-  service.UpdatePasswordResponse:
-    properties:
-      message:
         type: string
     type: object
   service.UpdatePasteInput:
@@ -513,7 +508,7 @@ paths:
         "202":
           description: Successfully accepted
           schema:
-            $ref: '#/definitions/service.ResetPasswordResp'
+            $ref: '#/definitions/service.MessageResp'
         "400":
           description: Bad request
           schema:
@@ -610,6 +605,31 @@ paths:
       summary: Activation
       tags:
       - users
+  /api/v1/users/activation-email:
+    post:
+      description: Activates the user by input token.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully resent
+          schema:
+            $ref: '#/definitions/service.MessageResp'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Activation
+      tags:
+      - users
   /api/v1/users/password:
     put:
       consumes:
@@ -628,7 +648,7 @@ paths:
         "200":
           description: Successfully reset
           schema:
-            $ref: '#/definitions/service.UpdatePasswordResponse'
+            $ref: '#/definitions/service.MessageResp'
         "400":
           description: Bad request
           schema:

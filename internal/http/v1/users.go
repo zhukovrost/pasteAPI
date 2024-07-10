@@ -2,6 +2,7 @@ package v1
 
 import (
 	"errors"
+	"github.com/zhukovrost/pasteAPI/internal/auth"
 	"github.com/zhukovrost/pasteAPI/internal/repository"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
 	"github.com/zhukovrost/pasteAPI/internal/service"
@@ -117,6 +118,32 @@ func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ResendActivationEmail activates the user by input token
+//
+// @Summary      Activation
+// @Description  Activates the user by input token.
+// @Tags         users
+// @Produce      json
+// @Success      200  {object}  service.MessageResp  "Successfully resent"
+// @Failure      400  {object}  ErrorResponse "Bad request"
+// @Failure      429 {object} ErrorResponse "Too many requests, rate limit exceeded"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/users/activation-email [post]
+func (h *Handler) ResendActivationEmail(w http.ResponseWriter, r *http.Request) {
+	user := auth.ContextGetUser(r)
+
+	err := h.services.Users.ActivationRequest(user)
+	if err != nil {
+		h.ServerErrorResponse(w, r, err)
+		return
+	}
+
+	err = helpers.WriteJSON(w, http.StatusOK, helpers.Envelope{"message": "activation email has been successfully resent"}, nil)
+	if err != nil {
+		h.ServerErrorResponse(w, r, err)
+	}
+}
+
 // UpdatePasswordHandler updates user's password by input token
 //
 // @Summary      Update password
@@ -125,7 +152,7 @@ func (h *Handler) ActivateUserHandler(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        body  body     service.UpdatePasswordInput  true  "User activation input"
-// @Success      200  {object}  service.UpdatePasswordResponse  "Successfully reset"
+// @Success      200  {object}  service.MessageResp  "Successfully reset"
 // @Failure      400  {object}  ErrorResponse "Bad request"
 // @Failure      422  {object}  ErrorResponse "Unprocessable data"
 // @Failure      429 {object} ErrorResponse "Too many requests, rate limit exceeded"

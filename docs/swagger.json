@@ -525,7 +525,7 @@
                     "202": {
                         "description": "Successfully accepted",
                         "schema": {
-                            "$ref": "#/definitions/service.ResetPasswordResp"
+                            "$ref": "#/definitions/service.MessageResp"
                         }
                     },
                     "400": {
@@ -671,6 +671,44 @@
                 }
             }
         },
+        "/api/v1/users/activation-email": {
+            "post": {
+                "description": "Activates the user by input token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Activation",
+                "responses": {
+                    "200": {
+                        "description": "Successfully resent",
+                        "schema": {
+                            "$ref": "#/definitions/service.MessageResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/password": {
             "put": {
                 "description": "Update user's password by input data.",
@@ -699,7 +737,7 @@
                     "200": {
                         "description": "Successfully reset",
                         "schema": {
-                            "$ref": "#/definitions/service.UpdatePasswordResponse"
+                            "$ref": "#/definitions/service.MessageResp"
                         }
                     },
                     "400": {
@@ -880,6 +918,14 @@
                 }
             }
         },
+        "service.MessageResp": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "service.PastePermissionResponse": {
             "type": "object",
             "properties": {
@@ -918,14 +964,6 @@
                 }
             }
         },
-        "service.ResetPasswordResp": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
         "service.UpdatePasswordInput": {
             "type": "object",
             "properties": {
@@ -933,14 +971,6 @@
                     "type": "string"
                 },
                 "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "service.UpdatePasswordResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
                     "type": "string"
                 }
             }

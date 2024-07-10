@@ -31,6 +31,7 @@ type Users interface {
 	Register(user *models.User) error
 	Login(email, password string) (*models.Token, error)
 	Activate(token string) (*models.User, error)
+	ActivationRequest(user *models.User) error
 	UpdatePassword(token, newPassword string) error
 	ResetPasswordRequest(email string) error
 }
@@ -73,8 +74,15 @@ func New(cfg Config, deps Dependencies) *Services {
 	return &Services{
 		Config: cfg,
 		Deps:   deps,
-		Pastes: newPasteService(deps.Models.Pastes, deps.Models.Permissions, deps.Logger, deps.Cache, deps.Wg),
+		Pastes: newPasteService(
+			deps.Models.Pastes,
+			deps.Models.Permissions,
+			deps.Logger,
+			deps.Cache,
+			deps.Wg,
+		),
 		Users: newUserService(
+			&UserServiceConfig{Environment: cfg.Env},
 			deps.Models.Users,
 			deps.Models.Tokens,
 			newEmailService(deps.Mailer, &emailServiceConfig{ActivationLink: cfg.ActivationLink, ResetLink: cfg.ResetLink}),
@@ -136,7 +144,7 @@ type UpdatePasswordInput struct {
 	NewPassword    string `json:"password"`
 }
 
-type UpdatePasswordResponse struct {
+type MessageResp struct {
 	Message string `json:"message"`
 }
 
@@ -151,8 +159,4 @@ type AuthResp struct {
 
 type ResetPasswordInput struct {
 	Email string `json:"email"`
-}
-
-type ResetPasswordResp struct {
-	Message string `json:"message"`
 }

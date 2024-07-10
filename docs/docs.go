@@ -529,7 +529,7 @@ const docTemplate = `{
                     "202": {
                         "description": "Successfully accepted",
                         "schema": {
-                            "$ref": "#/definitions/service.ResetPasswordResp"
+                            "$ref": "#/definitions/service.MessageResp"
                         }
                     },
                     "400": {
@@ -675,6 +675,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/users/activation-email": {
+            "post": {
+                "description": "Activates the user by input token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Activation",
+                "responses": {
+                    "200": {
+                        "description": "Successfully resent",
+                        "schema": {
+                            "$ref": "#/definitions/service.MessageResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/password": {
             "put": {
                 "description": "Update user's password by input data.",
@@ -703,7 +741,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully reset",
                         "schema": {
-                            "$ref": "#/definitions/service.UpdatePasswordResponse"
+                            "$ref": "#/definitions/service.MessageResp"
                         }
                     },
                     "400": {
@@ -884,6 +922,14 @@ const docTemplate = `{
                 }
             }
         },
+        "service.MessageResp": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "service.PastePermissionResponse": {
             "type": "object",
             "properties": {
@@ -922,14 +968,6 @@ const docTemplate = `{
                 }
             }
         },
-        "service.ResetPasswordResp": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
         "service.UpdatePasswordInput": {
             "type": "object",
             "properties": {
@@ -937,14 +975,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "service.UpdatePasswordResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
                     "type": "string"
                 }
             }

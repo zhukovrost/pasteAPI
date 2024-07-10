@@ -68,7 +68,7 @@ func (h *Handler) CreateAuthenticationTokenHandler(w http.ResponseWriter, r *htt
 // @Accept       json
 // @Produce      json
 // @Param        body  body     service.ResetPasswordInput  true  "Input email"
-// @Success      202  {object}  service.ResetPasswordResp  "Successfully accepted"
+// @Success      202  {object}  service.MessageResp  "Successfully accepted"
 // @Failure      400  {object}  ErrorResponse "Bad request"
 // @Failure      422  {object}  ErrorResponse "Unprocessable data"
 // @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"

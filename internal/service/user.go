@@ -21,12 +21,13 @@ type UserServiceConfig struct {
 	Environment string
 }
 
-func newUserService(repo repository.Users, tokenRepo repository.Tokens, mailer *emailService, log *logrus.Logger) *UserService {
+func newUserService(cfg *UserServiceConfig, repo repository.Users, tokenRepo repository.Tokens, mailer *emailService, log *logrus.Logger) *UserService {
 	return &UserService{
-		repo:      repo,
-		tokenRepo: tokenRepo,
-		mailer:    mailer,
-		log:       log,
+		repo:              repo,
+		tokenRepo:         tokenRepo,
+		mailer:            mailer,
+		log:               log,
+		UserServiceConfig: cfg,
 	}
 }
 
@@ -36,6 +37,10 @@ func (s *UserService) Register(user *models.User) error {
 		return err
 	}
 
+	return s.ActivationRequest(user)
+}
+
+func (s *UserService) ActivationRequest(user *models.User) error {
 	token, err := s.tokenRepo.New(user.ID, 8*time.Hour, repository.ScopeActivation)
 	if err != nil {
 		return err
