@@ -71,6 +71,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "boolean",
+                        "description": "Get pastes, which current user can update",
+                        "name": "onlyUsers",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "Sort order, e.g., -created_at",
                         "name": "sort",
@@ -450,7 +456,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.AuthInput"
+                            "$ref": "#/definitions/service.AuthInput"
                         }
                     }
                 ],
@@ -458,7 +464,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Successfully created",
                         "schema": {
-                            "$ref": "#/definitions/v1.AuthResp"
+                            "$ref": "#/definitions/service.AuthResp"
                         }
                     },
                     "400": {
@@ -515,7 +521,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.ResetPasswordInput"
+                            "$ref": "#/definitions/service.ResetPasswordInput"
                         }
                     }
                 ],
@@ -523,7 +529,7 @@ const docTemplate = `{
                     "202": {
                         "description": "Successfully accepted",
                         "schema": {
-                            "$ref": "#/definitions/v1.ResetPasswordResp"
+                            "$ref": "#/definitions/service.ResetPasswordResp"
                         }
                     },
                     "400": {
@@ -573,7 +579,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.RegistrationInput"
+                            "$ref": "#/definitions/service.RegistrationInput"
                         }
                     }
                 ],
@@ -581,7 +587,7 @@ const docTemplate = `{
                     "202": {
                         "description": "Successfully accepted",
                         "schema": {
-                            "$ref": "#/definitions/v1.UserResp"
+                            "$ref": "#/definitions/service.UserResp"
                         }
                     },
                     "400": {
@@ -631,7 +637,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.ActivateUserInput"
+                            "$ref": "#/definitions/service.ActivateUserInput"
                         }
                     }
                 ],
@@ -639,7 +645,7 @@ const docTemplate = `{
                     "202": {
                         "description": "Successfully accepted",
                         "schema": {
-                            "$ref": "#/definitions/v1.UserResp"
+                            "$ref": "#/definitions/service.UserResp"
                         }
                     },
                     "400": {
@@ -689,7 +695,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.UpdatePasswordInput"
+                            "$ref": "#/definitions/service.UpdatePasswordInput"
                         }
                     }
                 ],
@@ -697,7 +703,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully reset",
                         "schema": {
-                            "$ref": "#/definitions/v1.UpdatePasswordResponse"
+                            "$ref": "#/definitions/service.UpdatePasswordResponse"
                         }
                     },
                     "400": {
@@ -820,6 +826,33 @@ const docTemplate = `{
                 }
             }
         },
+        "service.ActivateUserInput": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.AuthInput": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.AuthResp": {
+            "type": "object",
+            "properties": {
+                "authentication_token": {
+                    "$ref": "#/definitions/models.Token"
+                }
+            }
+        },
         "service.CreatePasteInput": {
             "type": "object",
             "properties": {
@@ -867,6 +900,55 @@ const docTemplate = `{
                 }
             }
         },
+        "service.RegistrationInput": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.ResetPasswordInput": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.ResetPasswordResp": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.UpdatePasswordInput": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.UpdatePasswordResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "service.UpdatePasteInput": {
             "type": "object",
             "properties": {
@@ -884,30 +966,11 @@ const docTemplate = `{
                 }
             }
         },
-        "v1.ActivateUserInput": {
+        "service.UserResp": {
             "type": "object",
             "properties": {
-                "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.AuthInput": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.AuthResp": {
-            "type": "object",
-            "properties": {
-                "authentication_token": {
-                    "$ref": "#/definitions/models.Token"
+                "user": {
+                    "$ref": "#/definitions/models.User"
                 }
             }
         },
@@ -935,63 +998,6 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                }
-            }
-        },
-        "v1.RegistrationInput": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "login": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.ResetPasswordInput": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.ResetPasswordResp": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.UpdatePasswordInput": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.UpdatePasswordResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.UserResp": {
-            "type": "object",
-            "properties": {
-                "user": {
-                    "$ref": "#/definitions/models.User"
                 }
             }
         }

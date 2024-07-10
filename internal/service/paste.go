@@ -21,20 +21,20 @@ func pasteKey(id uint16) string {
 }
 
 // searchKey generates the key for search result
-// pattern: search:title:category:sort:page:pagesize
+// pattern: search:title:category:onlyUsers:sort:page:pagesize
 func searchKey(settings SearchSettings) string {
-	return fmt.Sprintf("search:%s:%d:%s:%d:%d", settings.Title, settings.Category, settings.Filters.Sort, settings.Filters.Page, settings.Filters.PageSize)
+	return fmt.Sprintf("search:%s:%d:%v:%s:%d:%d", settings.Title, settings.Category, settings.OnlyUsers, settings.Filters.Sort, settings.Filters.Page, settings.Filters.PageSize)
 }
 
 type PasteService struct {
 	repo            repository.Pastes
 	permissionsRepo repository.Permissions
+	cache           cache.Cache
 	log             *logrus.Logger
-	cache           *cache.MyCache
 	wg              *sync.WaitGroup
 }
 
-func NewPasteService(repo repository.Pastes, permissionsRepo repository.Permissions, log *logrus.Logger, cache *cache.MyCache, wg *sync.WaitGroup) *PasteService {
+func newPasteService(repo repository.Pastes, permissionsRepo repository.Permissions, log *logrus.Logger, cache cache.Cache, wg *sync.WaitGroup) *PasteService {
 	return &PasteService{
 		repo:            repo,
 		permissionsRepo: permissionsRepo,
@@ -47,7 +47,7 @@ func NewPasteService(repo repository.Pastes, permissionsRepo repository.Permissi
 func (s *PasteService) GetList(settings SearchSettings, user *models.User) (*ListPastesOutput, error) {
 	cacheKey := searchKey(settings)
 	listOutput := &ListPastesOutput{}
-	err := getFromCache(s.cache, cacheKey, listOutput)
+	err := s.cache.Get(cacheKey, listOutput)
 
 	if err == nil {
 		v := validator.New()
@@ -63,7 +63,17 @@ func (s *PasteService) GetList(settings SearchSettings, user *models.User) (*Lis
 		s.log.Error(err)
 	}
 
-	pastes, metadata, err := s.repo.ReadAll(settings.Title, settings.Category, user, settings.Filters)
+	var (
+		pastes   []*models.Paste
+		metadata *models.Metadata
+	)
+
+	if settings.OnlyUsers && !user.IsAnonymous() {
+		pastes, metadata, err = s.repo.ReadUserPastes(settings.Title, settings.Category, user, settings.Filters)
+	} else {
+		pastes, metadata, err = s.repo.ReadAll(settings.Title, settings.Category, user, settings.Filters)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -71,13 +81,13 @@ func (s *PasteService) GetList(settings SearchSettings, user *models.User) (*Lis
 	listOutput = &ListPastesOutput{pastes, metadata}
 
 	helpers.Background(s.wg, s.log, func() {
-		in, err := existsInCache(s.cache, cacheKey)
+		in, err := s.cache.Exists(cacheKey)
 		if err != nil {
 			s.log.Error(err)
 			return
 		}
 
-		if !in && setCache(s.cache, cacheKey, listOutput) != nil {
+		if !in && s.cache.Set(cacheKey, listOutput) != nil {
 			s.log.Error(err)
 		}
 	})
@@ -87,7 +97,7 @@ func (s *PasteService) GetList(settings SearchSettings, user *models.User) (*Lis
 func (s *PasteService) GetPaste(id uint16, user *models.User) (*models.Paste, error) {
 	paste := &models.Paste{}
 
-	err := getFromCache(s.cache, pasteKey(id), paste)
+	err := s.cache.Get(pasteKey(id), paste)
 	if err == nil {
 		v := validator.New()
 		validateTime(v, paste)
@@ -106,17 +116,17 @@ func (s *PasteService) Delete(id uint16) error {
 	// Delete paste from cache as well
 	go func() {
 		key := pasteKey(id)
-		in, err := existsInCache(s.cache, key)
+		in, err := s.cache.Exists(key)
 		if err != nil {
 			s.log.Error(err)
 			return
 		}
 
-		if in && deleteFromCache(s.cache, key) != nil {
+		if in && s.cache.Delete(key) != nil {
 			s.log.Error(err)
 		}
 
-		if in && invalidateCache(s.cache, key) != nil {
+		if in && s.cache.Invalidate(key) != nil {
 			s.log.Error(err)
 		}
 	}()
@@ -140,8 +150,8 @@ func (s *PasteService) Create(paste *models.Paste, creator *models.User) error {
 	}
 
 	helpers.Background(s.wg, s.log, func() {
-		if err = setCache(s.cache, pasteKey(paste.Id), paste); err == nil {
-			if err = invalidateCache(s.cache, "search:*"); err == nil {
+		if err = s.cache.Set(pasteKey(paste.Id), paste); err == nil {
+			if err = s.cache.Invalidate("search:*"); err == nil {
 				s.log.Debugf("paste (ID: %d) added to cache", paste.Id)
 				return
 			}
@@ -154,7 +164,7 @@ func (s *PasteService) Create(paste *models.Paste, creator *models.User) error {
 
 func (s *PasteService) GetPasteForUpdate(pasteId uint16, in UpdatePasteInput) (*models.Paste, error) {
 	paste := &models.Paste{}
-	err := getFromCache(s.cache, pasteKey(pasteId), paste)
+	err := s.cache.Get(pasteKey(pasteId), paste)
 	if err != nil {
 		paste, err = s.repo.Read(pasteId, models.AnonymousUser)
 		if err != nil {
@@ -185,14 +195,14 @@ func (s *PasteService) Update(paste *models.Paste) error {
 		return err
 	}
 
-	if err = setCache(s.cache, pasteKey(paste.Id), paste); err != nil {
+	if err = s.cache.Set(pasteKey(paste.Id), paste); err != nil {
 		s.log.Errorf("paste (ID: %d) not added to cache due to the error: %s", paste.Id, err)
 	} else {
 		s.log.Debugf("paste (ID: %d) added to cache", paste.Id)
 	}
 
 	helpers.Background(s.wg, s.log, func() {
-		if err = invalidateCache(s.cache, "search:*"); err != nil {
+		if err = s.cache.Invalidate("search:*"); err != nil {
 			s.log.Error(err)
 		}
 	})

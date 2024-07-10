@@ -47,7 +47,7 @@ func Run(cfg *config.Config) {
 
 	defer mailer.Close()
 
-	log.Info("configuring cache (Redis)")
+	log.Info("configuring cache (Cache)")
 
 	cacheExpiration, err := time.ParseDuration(cfg.Redis.Expiration)
 	if err != nil {
@@ -114,7 +114,7 @@ func Run(cfg *config.Config) {
 			Logger: log,
 			DB:     db,
 			Mailer: mailer,
-			Redis:  cache,
+			Cache:  cache,
 			Models: models,
 			Wg:     &sync.WaitGroup{},
 		},

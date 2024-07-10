@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base32"
-	"github.com/zhukovrost/pasteAPI/pkg/validator"
 	"time"
 )
 
@@ -33,9 +32,4 @@ func GenerateToken(userID int64, ttl time.Duration, scope string) (*Token, error
 	token.Hash = hash[:]
 
 	return token, nil
-}
-
-func ValidateTokenPlaintext(v *validator.MyValidator, plaintext string) {
-	v.Check(plaintext != "", "token", "must be provided")
-	v.Check(len(plaintext) == 26, "token", "must be 26 bytes long")
 }

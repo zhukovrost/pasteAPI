@@ -98,6 +98,16 @@ func ReadString(qs url.Values, key string, defaultValue string) string {
 	return defaultValue
 }
 
+func ReadBool(qs url.Values, key string, defaultValue bool) bool {
+	if value, exists := qs[key]; exists && len(value) > 0 {
+		boolValue, err := strconv.ParseBool(value[0])
+		if err == nil {
+			return boolValue
+		}
+	}
+	return defaultValue
+}
+
 // ReadCSV reads a comma-separated value for the given key from the query string
 // and returns a slice of strings. If the key does not exist, it returns the default slice.
 func ReadCSV(qs url.Values, key string, defaultValue []string) []string {

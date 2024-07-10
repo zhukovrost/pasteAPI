@@ -1,13 +1,13 @@
 package v1
 
 import (
-	"context"
 	"errors"
 	"expvar"
 	"fmt"
 	"github.com/zhukovrost/pasteAPI/internal/auth"
 	"github.com/zhukovrost/pasteAPI/internal/repository"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
+	"github.com/zhukovrost/pasteAPI/internal/service"
 	"github.com/zhukovrost/pasteAPI/pkg/helpers"
 	"github.com/zhukovrost/pasteAPI/pkg/validator"
 	"net"
@@ -41,6 +41,7 @@ func (h *Handler) DebugRequest(next http.Handler) http.Handler {
 
 func (h *Handler) RateLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO: fix
 		if !h.services.Config.Limiter.Enabled {
 			next.ServeHTTP(w, r)
 			return
@@ -52,21 +53,7 @@ func (h *Handler) RateLimit(next http.Handler) http.Handler {
 			return
 		}
 
-		redisKey := fmt.Sprintf("client:%s", ip)
-		ctx, cancel := context.WithTimeout(context.Background(), h.services.Deps.Redis.Timeout)
-		defer cancel()
-
-		// Increment the counter for this IP and set expiration if it's a new key
-		pipe := h.services.Deps.Redis.TxPipeline()
-		incr := pipe.Incr(ctx, redisKey)
-		pipe.Expire(ctx, redisKey, time.Second)
-		_, err = pipe.Exec(ctx)
-		if err != nil {
-			h.ServerErrorResponse(w, r, err)
-			return
-		}
-
-		requests, err := incr.Result()
+		requests, err := h.services.Deps.Cache.RateLimiter(ip)
 		if err != nil {
 			h.ServerErrorResponse(w, r, err)
 			return
@@ -102,7 +89,7 @@ func (h *Handler) Authenticate(next http.Handler) http.Handler {
 		token := headerParts[1]
 
 		v := validator.New()
-		if models.ValidateTokenPlaintext(v, token); !v.Valid() {
+		if service.ValidateTokenPlaintext(v, token); !v.Valid() {
 			h.InvalidAuthenticationTokenResponse(w, r)
 			return
 		}

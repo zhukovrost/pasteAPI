@@ -117,12 +117,12 @@ func processFlags(cfg *Config) error {
 	//flag.StringVar(&cfg.SMTP.Sender, "smtp-sender", cfg.SMTP.Sender, "SMTP sender")
 	//flag.StringVar(&cfg.SMTP.Timeout, "smtp-timout", cfg.SMTP.Timeout, "SMTP timeout")
 
-	flag.StringVar(&cfg.Redis.Host, "redis-address", cfg.Redis.Host, "Redis address")
-	flag.StringVar(&cfg.Redis.Port, "redis-port", cfg.Redis.Port, "Redis port")
-	flag.StringVar(&cfg.Redis.Password, "redis-password", cfg.Redis.Password, "Redis password")
-	flag.IntVar(&cfg.Redis.DB, "redis-db", cfg.Redis.DB, "Redis database")
-	flag.StringVar(&cfg.Redis.Timeout, "redis-timeout", cfg.Redis.Timeout, "Redis timeout")
-	flag.StringVar(&cfg.Redis.Expiration, "redis-expiration", cfg.Redis.Expiration, "Redis expiration duration")
+	flag.StringVar(&cfg.Redis.Host, "redis-address", cfg.Redis.Host, "Cache address")
+	flag.StringVar(&cfg.Redis.Port, "redis-port", cfg.Redis.Port, "Cache port")
+	flag.StringVar(&cfg.Redis.Password, "redis-password", cfg.Redis.Password, "Cache password")
+	flag.IntVar(&cfg.Redis.DB, "redis-db", cfg.Redis.DB, "Cache database")
+	flag.StringVar(&cfg.Redis.Timeout, "redis-timeout", cfg.Redis.Timeout, "Cache timeout")
+	flag.StringVar(&cfg.Redis.Expiration, "redis-expiration", cfg.Redis.Expiration, "Cache expiration duration")
 
 	flag.StringVar(&cfg.RabbitMQ.URL, "rabbitmq-url", cfg.RabbitMQ.URL, "rabbitmq url")
 	flag.StringVar(&cfg.RabbitMQ.WaitTime, "rabbitmq-wait-time", cfg.RabbitMQ.WaitTime, "rabbitmq wait time between connection tries")

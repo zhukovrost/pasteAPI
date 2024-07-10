@@ -1,8 +1,6 @@
 package service
 
 import (
-	"context"
-	"encoding/json"
 	"github.com/sirupsen/logrus"
 	"github.com/zhukovrost/pasteAPI/internal/repository"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
@@ -16,6 +14,7 @@ type Services struct {
 	Config
 	Deps   Dependencies
 	Pastes Pastes
+	Users  Users
 }
 
 type Pastes interface {
@@ -28,6 +27,20 @@ type Pastes interface {
 	GivePermission(pasteId uint16, userId int64) (*PastePermissionResponse, error)
 }
 
+type Users interface {
+	Register(user *models.User) error
+	Login(email, password string) (*models.Token, error)
+	Activate(token string) (*models.User, error)
+	UpdatePassword(token, newPassword string) error
+	ResetPasswordRequest(email string) error
+}
+
+type emails interface {
+	sendActivationEmail(email *rabbitmq.Email) error
+	sendResetEmail(email *rabbitmq.Email) error
+}
+
+// Config represents 'super-config' for all services
 type Config struct {
 	Host           string
 	Port           int
@@ -51,7 +64,7 @@ type Dependencies struct {
 	Logger *logrus.Logger
 	DB     postgres.Database
 	Mailer *rabbitmq.Connection
-	Redis  *cache.MyCache
+	Cache  cache.Cache
 	Models *repository.Models
 	Wg     *sync.WaitGroup
 }
@@ -60,14 +73,21 @@ func New(cfg Config, deps Dependencies) *Services {
 	return &Services{
 		Config: cfg,
 		Deps:   deps,
-		Pastes: NewPasteService(deps.Models.Pastes, deps.Models.Permissions, deps.Logger, deps.Redis, deps.Wg),
+		Pastes: newPasteService(deps.Models.Pastes, deps.Models.Permissions, deps.Logger, deps.Cache, deps.Wg),
+		Users: newUserService(
+			deps.Models.Users,
+			deps.Models.Tokens,
+			newEmailService(deps.Mailer, &emailServiceConfig{ActivationLink: cfg.ActivationLink, ResetLink: cfg.ResetLink}),
+			deps.Logger,
+		),
 	}
 }
 
 type SearchSettings struct {
-	Title    string
-	Category uint8
-	Filters  models.Filters
+	Title     string
+	Category  uint8
+	OnlyUsers bool
+	Filters   models.Filters
 }
 
 type ListPastesOutput struct {
@@ -97,67 +117,42 @@ type PastePermissionResponse struct {
 	Permission models.Permission `json:"permission"`
 }
 
-func getFromCache(myCache *cache.MyCache, key string, result interface{}) error {
-	ctx, cancel := context.WithTimeout(context.Background(), myCache.Timeout)
-	defer cancel()
-
-	data, err := myCache.Get(ctx, key).Bytes()
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(data, result)
+type RegistrationInput struct {
+	Login    string `json:"login"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
-func setCache(myCache *cache.MyCache, key string, value interface{}) error {
-	ctx, cancel := context.WithTimeout(context.Background(), myCache.Timeout)
-	defer cancel()
-
-	data, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	return myCache.Set(ctx, key, data, myCache.Expiration).Err()
+type UserResp struct {
+	U *models.User `json:"user"`
 }
 
-func existsInCache(myCache *cache.MyCache, key string) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), myCache.Timeout)
-	defer cancel()
-
-	exists, err := myCache.Exists(ctx, key).Result()
-	if err != nil {
-		return false, err
-	}
-
-	return exists == 1, nil
+type ActivateUserInput struct {
+	TokenPlainText string `json:"token"`
 }
 
-func deleteFromCache(myCache *cache.MyCache, key string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), myCache.Timeout)
-	defer cancel()
-
-	return myCache.Del(ctx, key).Err()
+type UpdatePasswordInput struct {
+	TokenPlainText string `json:"token"`
+	NewPassword    string `json:"password"`
 }
 
-func invalidateCache(myCache *cache.MyCache, pattern string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), myCache.Timeout)
-	defer cancel()
+type UpdatePasswordResponse struct {
+	Message string `json:"message"`
+}
 
-	keys, err := myCache.Keys(ctx, pattern).Result()
-	if err != nil {
-		return err
-	}
-	if len(keys) == 0 {
-		return nil
-	}
+type AuthInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
-	// Using Redis pipeline to delete keys atomically
-	pipe := myCache.Pipeline()
-	for _, key := range keys {
-		pipe.Del(ctx, key)
-	}
+type AuthResp struct {
+	*models.Token `json:"authentication_token"`
+}
 
-	_, err = pipe.Exec(ctx)
-	return err
+type ResetPasswordInput struct {
+	Email string `json:"email"`
+}
+
+type ResetPasswordResp struct {
+	Message string `json:"message"`
 }

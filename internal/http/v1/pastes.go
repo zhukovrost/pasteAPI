@@ -23,6 +23,7 @@ import (
 // @Produce      json
 // @Param        title     query    string  false  "Title of the paste"
 // @Param        category  query    int     false  "Category ID of the paste"
+// @Param        onlyUsers  query    bool     false  "Get pastes, which current user can update"
 // @Param        sort      query    string  false  "Sort order, e.g., -created_at"
 // @Param        page      query    int     false  "Page number for pagination"
 // @Param        pageSize  query    int     false  "Number of items per page"
@@ -37,6 +38,7 @@ func (h *Handler) ListPastesHandler(w http.ResponseWriter, r *http.Request) {
 	qs := r.URL.Query()
 	in.Title = helpers.ReadString(qs, "title", "")
 	in.Filters.Sort = helpers.ReadString(qs, "sort", "-created_at")
+	in.OnlyUsers = helpers.ReadBool(qs, "onlyUsers", false)
 
 	v := validator.New()
 	in.Category = uint8(helpers.ReadInt(qs, "category", 0, v))
