@@ -22,8 +22,8 @@ func pasteKey(id uint16) string {
 
 // searchKey generates the key for search result
 // pattern: search:title:category:onlyUsers:sort:page:pagesize:token
-func searchKey(settings SearchSettings, userId int64) string {
-	return fmt.Sprintf("search:%s:%d:%v:%s:%d:%d:%d", settings.Title, settings.Category, settings.OnlyUsers, settings.Filters.Sort, settings.Filters.Page, settings.Filters.PageSize, userId)
+func searchKey(settings SearchSettings) string {
+	return fmt.Sprintf("search:%s:%d:%s:%d:%d", settings.Title, settings.Category, settings.Filters.Sort, settings.Filters.Page, settings.Filters.PageSize)
 }
 
 type PasteService struct {
@@ -45,52 +45,66 @@ func newPasteService(repo repository.Pastes, permissionsRepo repository.Permissi
 }
 
 func (s *PasteService) GetList(settings SearchSettings, user *models.User) (*ListPastesOutput, error) {
-	cacheKey := searchKey(settings, user.ID)
-	listOutput := &ListPastesOutput{}
-	err := s.cache.Get(cacheKey, listOutput)
+	// cache processing
+	if !settings.OnlyUsers {
+		listOutput := &ListPastesOutput{}
+		cacheKey := searchKey(settings)
+		err := s.cache.Get(cacheKey, listOutput)
+		if err == nil {
+			v := validator.New()
+			for _, paste := range listOutput.Pastes {
+				validateTime(v, paste)
+			}
 
-	if err == nil {
-		v := validator.New()
-		for _, paste := range listOutput.Pastes {
-			validateTime(v, paste)
-		}
+			if v.Valid() {
+				s.log.Debugf("pastes list got from cache")
+				if err := s.setListCanEdit(listOutput.Pastes, user); err != nil {
+					return nil, err
+				}
 
-		if v.Valid() {
-			s.log.Debugf("pastes list got from cache")
-			return listOutput, nil
+				return listOutput, nil
+			}
+		} else if !errors.Is(err, redis.Nil) {
+			s.log.Error(err)
 		}
-	} else if !errors.Is(err, redis.Nil) {
-		s.log.Error(err)
 	}
 
 	var (
 		pastes   []*models.Paste
 		metadata *models.Metadata
+		err      error
 	)
 
 	if settings.OnlyUsers {
 		pastes, metadata, err = s.repo.ReadUserPastes(settings.Title, settings.Category, user, settings.Filters)
 	} else {
-		pastes, metadata, err = s.repo.ReadAll(settings.Title, settings.Category, user, settings.Filters)
+		pastes, metadata, err = s.repo.ReadAll(settings.Title, settings.Category, settings.Filters)
+		if err := s.setListCanEdit(pastes, user); err != nil {
+			return nil, err
+		}
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	listOutput = &ListPastesOutput{pastes, metadata}
+	listOutput := &ListPastesOutput{pastes, metadata}
+	if !settings.OnlyUsers {
+		cacheKey := searchKey(settings)
+		helpers.Background(s.wg, s.log, func() {
+			// setting cache
+			in, err := s.cache.Exists(cacheKey)
+			if err != nil {
+				s.log.Error(err)
+				return
+			}
 
-	helpers.Background(s.wg, s.log, func() {
-		in, err := s.cache.Exists(cacheKey)
-		if err != nil {
-			s.log.Error(err)
-			return
-		}
+			if !in && s.cache.Set(cacheKey, listOutput) != nil {
+				s.log.Error(err)
+			}
+		})
+	}
 
-		if !in && s.cache.Set(cacheKey, listOutput) != nil {
-			s.log.Error(err)
-		}
-	})
 	return listOutput, nil
 }
 
@@ -103,33 +117,45 @@ func (s *PasteService) GetPaste(id uint16, user *models.User) (*models.Paste, er
 		validateTime(v, paste)
 		if v.Valid() {
 			s.log.Debugf("paste (ID: %d) got from cache", paste.Id)
+			if err := s.setCanEdit(paste, user); err != nil {
+				return nil, err
+			}
 			return paste, nil
 		}
 	} else if !errors.Is(err, redis.Nil) {
 		s.log.Error(err)
 	}
 
-	return s.repo.Read(id, user)
+	paste, err = s.repo.Read(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.setCanEdit(paste, user); err != nil {
+		return nil, err
+	}
+	return paste, nil
 }
 
 func (s *PasteService) Delete(id uint16) error {
-	// Delete paste from cache as well
-	go func() {
+	helpers.Background(s.wg, s.log, func() {
+		// Delete paste from cache as well
 		key := pasteKey(id)
 		in, err := s.cache.Exists(key)
+
+		// TODO: rethink error handling at this moment
 		if err != nil {
 			s.log.Error(err)
-			return
 		}
 
 		if in && s.cache.Delete(key) != nil {
 			s.log.Error(err)
 		}
 
-		if in && s.cache.Invalidate(key) != nil {
+		if in && s.cache.Invalidate("search:*") != nil {
 			s.log.Error(err)
 		}
-	}()
+	})
 
 	return s.repo.Delete(id)
 }
@@ -166,11 +192,12 @@ func (s *PasteService) GetPasteForUpdate(pasteId uint16, in UpdatePasteInput) (*
 	paste := &models.Paste{}
 	err := s.cache.Get(pasteKey(pasteId), paste)
 	if err != nil {
-		paste, err = s.repo.Read(pasteId, models.AnonymousUser)
+		paste, err = s.repo.Read(pasteId)
 		if err != nil {
 			return nil, err
 		}
 	}
+	paste.CanEdit = true
 
 	if in.Title != nil {
 		paste.Title = strings.TrimSpace(*in.Title)
@@ -215,6 +242,25 @@ func (s *PasteService) GivePermission(pasteId uint16, userId int64) (*PastePermi
 		return nil, err
 	}
 	return &PastePermissionResponse{Permission: models.Permission{PasteId: pasteId, UserId: userId}}, nil
+}
+
+func (s *PasteService) setCanEdit(paste *models.Paste, user *models.User) error {
+	hasPermission, err := s.permissionsRepo.CheckWritePermission(user.ID, paste.Id)
+	if err != nil {
+		return err
+	}
+
+	paste.CanEdit = hasPermission && user.Activated
+	return nil
+}
+
+func (s *PasteService) setListCanEdit(pastes []*models.Paste, user *models.User) error {
+	for _, paste := range pastes {
+		if err := s.setCanEdit(paste, user); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func ValidatePaste(v *validator.MyValidator, p *models.Paste) {

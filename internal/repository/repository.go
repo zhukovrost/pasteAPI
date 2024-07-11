@@ -23,8 +23,8 @@ type Users interface {
 
 type Pastes interface {
 	Create(p *models.Paste) error
-	Read(id uint16, user *models.User) (*models.Paste, error)
-	ReadAll(title string, category uint8, user *models.User, filters models.Filters) ([]*models.Paste, *models.Metadata, error)
+	Read(id uint16) (*models.Paste, error)
+	ReadAll(title string, category uint8, filters models.Filters) ([]*models.Paste, *models.Metadata, error)
 	ReadUserPastes(title string, category uint8, user *models.User, filters models.Filters) ([]*models.Paste, *models.Metadata, error)
 	Update(p *models.Paste) error
 	Delete(id uint16) error

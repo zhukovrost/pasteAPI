@@ -30,23 +30,21 @@ func (m *PasteModel) Create(p *models.Paste) error {
 	return m.DB.QueryRowContext(ctx, query, args...).Scan(&p.Id, &p.CreatedAt, &p.ExpiresAt)
 }
 
-func (m *PasteModel) Read(pasteId uint16, user *models.User) (*models.Paste, error) {
-	if pasteId == 0 {
+func (m *PasteModel) Read(id uint16) (*models.Paste, error) {
+	if id == 0 {
 		return nil, ErrRecordNotFound
 	}
 	query := `
-		SELECT 
-			p.id, p.title, p.category, p.text, p.created_at, p.expires_at, p.version,
-			COALESCE((SELECT true FROM write_permissions wp WHERE wp.paste_id = p.id AND wp.user_id = $2), false) as can_edit
-		FROM pastes p
-		WHERE p.id = $1 AND p.expires_at >= NOW()`
+		SELECT id, title, category, text, created_at, expires_at, version
+		FROM pastes
+		WHERE id = $1 AND expires_at >= NOW()`
 
 	var paste models.Paste
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	err := m.DB.QueryRowContext(ctx, query, pasteId, user.ID).Scan(
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(
 		&paste.Id,
 		&paste.Title,
 		&paste.Category,
@@ -54,12 +52,7 @@ func (m *PasteModel) Read(pasteId uint16, user *models.User) (*models.Paste, err
 		&paste.CreatedAt,
 		&paste.ExpiresAt,
 		&paste.Version,
-		&paste.CanEdit,
 	)
-
-	if !user.Activated {
-		paste.CanEdit = false
-	}
 
 	if err != nil {
 		switch {
@@ -73,34 +66,30 @@ func (m *PasteModel) Read(pasteId uint16, user *models.User) (*models.Paste, err
 	return &paste, nil
 }
 
-func (m *PasteModel) ReadAll(title string, category uint8, user *models.User, filters models.Filters) ([]*models.Paste, *models.Metadata, error) {
+func (m *PasteModel) ReadAll(title string, category uint8, filters models.Filters) ([]*models.Paste, *models.Metadata, error) {
 	query := fmt.Sprintf(`
-		SELECT 
-			COUNT(*) OVER(), p.id, p.title, p.category, p.text, p.created_at, p.expires_at, p.version,
-			COALESCE((SELECT true FROM write_permissions wp WHERE wp.paste_id = p.id AND wp.user_id = $5), false) as can_edit
-		FROM pastes p
-		WHERE p.expires_at >= NOW()
-		AND ($1 = '' OR (to_tsvector('english', p.title) @@ plainto_tsquery($1)) OR (to_tsvector('russian', p.title) @@ plainto_tsquery($1)))
-		AND (p.category = $2 OR $2 = 0)
-		ORDER BY %s %s, p.id ASC
+		SELECT COUNT(*) OVER(), id, title, category, text, created_at, expires_at, version
+		FROM pastes
+		WHERE expires_at >= NOW()
+		AND ($1 = '' OR (to_tsvector('english', title) @@ plainto_tsquery($1)) OR (to_tsvector('russian', title) @@ plainto_tsquery($1)))
+		AND (category = $2 OR $2 = 0)
+		ORDER BY %s %s, id ASC
 		LIMIT $3 OFFSET $4`, filters.SortColumn(), filters.SortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	rows, err := m.DB.QueryContext(ctx, query, title, category, filters.Limit(), filters.Offset(), user.ID)
+	rows, err := m.DB.QueryContext(ctx, query, title, category, filters.Limit(), filters.Offset())
 	if err != nil {
 		return nil, &models.Metadata{}, err
 	}
 
-	return m.readAllBase(rows, user, filters)
+	return m.readAllBase(rows, filters)
 }
 
 func (m *PasteModel) ReadUserPastes(title string, category uint8, user *models.User, filters models.Filters) ([]*models.Paste, *models.Metadata, error) {
 	query := fmt.Sprintf(`
-		SELECT 
-			COUNT(*) OVER(), p.id, p.title, p.category, p.text, p.created_at, p.expires_at, p.version,
-			COALESCE((SELECT true FROM write_permissions wp WHERE wp.paste_id = p.id AND wp.user_id = $5), false) as can_edit
+		SELECT COUNT(*) OVER(), p.id, p.title, p.category, p.text, p.created_at, p.expires_at, p.version
 		FROM pastes p
 		WHERE p.expires_at >= NOW()
 		AND ($1 = '' OR (to_tsvector('english', p.title) @@ plainto_tsquery($1)) OR (to_tsvector('russian', p.title) @@ plainto_tsquery($1)))
@@ -117,10 +106,21 @@ func (m *PasteModel) ReadUserPastes(title string, category uint8, user *models.U
 		return nil, &models.Metadata{}, err
 	}
 
-	return m.readAllBase(rows, user, filters)
+	pastes, metadata, err := m.readAllBase(rows, filters)
+	if err != nil {
+		return nil, &models.Metadata{}, err
+	}
+
+	if user.Activated {
+		for _, paste := range pastes {
+			paste.CanEdit = true
+		}
+	}
+
+	return pastes, metadata, nil
 }
 
-func (m *PasteModel) readAllBase(rows *sql.Rows, user *models.User, filters models.Filters) ([]*models.Paste, *models.Metadata, error) {
+func (m *PasteModel) readAllBase(rows *sql.Rows, filters models.Filters) ([]*models.Paste, *models.Metadata, error) {
 	defer rows.Close()
 
 	pastes := make([]*models.Paste, 0)
@@ -138,12 +138,7 @@ func (m *PasteModel) readAllBase(rows *sql.Rows, user *models.User, filters mode
 			&paste.CreatedAt,
 			&paste.ExpiresAt,
 			&paste.Version,
-			&paste.CanEdit,
 		)
-
-		if !user.Activated {
-			paste.CanEdit = false
-		}
 
 		if err != nil {
 			return nil, &models.Metadata{}, err

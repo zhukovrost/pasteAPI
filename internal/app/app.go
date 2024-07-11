@@ -121,7 +121,7 @@ func Run(cfg *config.Config) {
 	)
 
 	handler := v1.NewHandler(service)
-	srv := server.New(handler, service.Port)
+	srv := server.New(handler, service.Port) // TODO: tls certificate
 
 	if err = server.Run(srv, service); err != nil {
 		log.Fatal(err)
