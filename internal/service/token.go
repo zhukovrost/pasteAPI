@@ -5,6 +5,6 @@ import (
 )
 
 func ValidateTokenPlaintext(v *validator.MyValidator, plaintext string) {
-	v.Check(plaintext != "", "token", "must be provided")
-	v.Check(len(plaintext) == 26, "token", "must be 26 bytes long")
+	v.Check(plaintext != "", "token", "token must be provided")
+	v.Check(len(plaintext) == 26, "token", "token must be 26 bytes long")
 }

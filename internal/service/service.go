@@ -64,8 +64,8 @@ type Config struct {
 type Dependencies struct {
 	Logger *logrus.Logger
 	DB     postgres.Database
-	Mailer *rabbitmq.Connection
 	Cache  cache.Cache
+	Mailer *rabbitmq.Connection
 	Models *repository.Models
 	Wg     *sync.WaitGroup
 }
@@ -82,10 +82,18 @@ func New(cfg Config, deps Dependencies) *Services {
 			deps.Wg,
 		),
 		Users: newUserService(
-			&UserServiceConfig{Environment: cfg.Env},
+			&UserServiceConfig{
+				Environment: cfg.Env,
+			},
 			deps.Models.Users,
 			deps.Models.Tokens,
-			newEmailService(deps.Mailer, &emailServiceConfig{ActivationLink: cfg.ActivationLink, ResetLink: cfg.ResetLink}),
+			newEmailService(
+				deps.Mailer,
+				&emailServiceConfig{
+					ActivationLink: cfg.ActivationLink,
+					ResetLink:      cfg.ResetLink,
+				},
+			),
 			deps.Logger,
 		),
 	}

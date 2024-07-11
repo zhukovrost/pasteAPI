@@ -158,19 +158,19 @@ func (s *UserService) ResetPasswordRequest(emailAddr string) error {
 }
 
 func ValidateEmail(v *validator.MyValidator, email string) {
-	v.Check(email != "", "email", "must be provided")
+	v.Check(email != "", "email", "email must be provided")
 	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
 }
 
 func ValidatePasswordPlaintext(v *validator.MyValidator, password string) {
-	v.Check(password != "", "Password", "must be provided")
-	v.Check(len(password) >= 8, "Password", "must be at least 8 bytes long")
-	v.Check(len(password) <= 72, "Password", "must not be more than 72 bytes long")
+	v.Check(password != "", "Password", "password must be provided")
+	v.Check(len(password) >= 8, "Password", "password must be at least 8 symbols long")
+	v.Check(len(password) <= 72, "Password", "password must not be more than 72 symbols long")
 }
 
 func ValidateLogin(v *validator.MyValidator, login string) {
-	v.Check(login != "", "login", "must be provided")
-	v.Check(validator.Matches(login, validator.LoginRX), "login", "contains incorrect symbols")
+	v.Check(login != "", "login", "login must be provided")
+	v.Check(validator.Matches(login, validator.LoginRX), "login", "login contains incorrect symbols")
 }
 
 func ValidateUser(v *validator.MyValidator, user *models.User) {
