@@ -37,8 +37,8 @@ type Users interface {
 }
 
 type emails interface {
-	sendActivationEmail(email *rabbitmq.Email) error
-	sendResetEmail(email *rabbitmq.Email) error
+	sendActivationEmail(email *models.Email) error
+	sendResetEmail(email *models.Email) error
 }
 
 // Config represents 'super-config' for all services
@@ -65,7 +65,7 @@ type Dependencies struct {
 	Logger *logrus.Logger
 	DB     postgres.Database
 	Cache  cache.Cache
-	Mailer *rabbitmq.Connection
+	Mailer rabbitmq.Mailer
 	Models *repository.Models
 	Wg     *sync.WaitGroup
 }

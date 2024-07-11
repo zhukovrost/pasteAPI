@@ -4,31 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"sync"
 	"time"
 )
 
-var (
-	once     sync.Once
-	myLogger *logrus.Logger
-)
-
 func New(needDebug bool) *logrus.Logger {
-	once.Do(func() {
-		myLogger = logrus.New()
-		myLogger.SetFormatter(&customJSONFormatter{})
-		if needDebug {
-			myLogger.SetLevel(logrus.DebugLevel)
-		} else {
-			myLogger.SetLevel(logrus.InfoLevel)
-		}
-	})
+	myLogger := logrus.New()
+	myLogger.SetFormatter(&customJSONFormatter{})
+	if needDebug {
+		myLogger.SetLevel(logrus.DebugLevel)
+	} else {
+		myLogger.SetLevel(logrus.InfoLevel)
+	}
 	return myLogger
-}
-
-func ResetLogger() {
-	once = sync.Once{}
-	myLogger = nil
 }
 
 type customJSONFormatter struct{}

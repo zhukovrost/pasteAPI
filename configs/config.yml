@@ -24,9 +24,6 @@ redis:
   expiration: 15m
 rabbitmq:
   url: amqp://guest:guest@localhost:5672/
-  wait_time: 5s
-  timeout: 5s
-  attempts: 5
   exchange: emails
   exchange_type: direct
   queue: user_emails

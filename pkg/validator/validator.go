@@ -56,12 +56,3 @@ func In(value string, list ...string) bool {
 func Matches(value string, rx *regexp.Regexp) bool {
 	return rx.MatchString(value)
 }
-
-// Unique returns true if all string values in a slice are unique.
-func Unique(values []string) bool {
-	uniqueValues := make(map[string]bool)
-	for _, value := range values {
-		uniqueValues[value] = true
-	}
-	return len(values) == len(uniqueValues)
-}

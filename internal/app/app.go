@@ -21,21 +21,8 @@ func Run(cfg *config.Config) {
 
 	log.Info("configuring mailer (RabbitMQ)")
 
-	mailerWaitTime, err := time.ParseDuration(cfg.RabbitMQ.WaitTime)
-	if err != nil {
-		mailerWaitTime = 5 * time.Second // default
-	}
-
-	mailerTimeout, err := time.ParseDuration(cfg.RabbitMQ.Timeout)
-	if err != nil {
-		mailerTimeout = 5 * time.Second // default
-	}
-
 	mailer, err := rabbitmq.New(rabbitmq.Config{
 		URL:          cfg.RabbitMQ.URL,
-		WaitTime:     mailerWaitTime,
-		Timeout:      mailerTimeout,
-		Attempts:     cfg.RabbitMQ.Attempts,
 		Exchange:     cfg.RabbitMQ.Exchange,
 		ExchangeType: cfg.RabbitMQ.ExchangeType,
 		Queue:        cfg.RabbitMQ.Queue,
@@ -59,14 +46,14 @@ func Run(cfg *config.Config) {
 		cacheTimeout = 5 * time.Second // default
 	}
 
-	cache := cache.New(cache.Config{
+	myCache := cache.New(cache.Config{
 		Addr:       cfg.Redis.Host + ":" + cfg.Redis.Port,
 		Password:   cfg.Redis.Password,
 		DB:         cfg.Redis.DB,
 		Expiration: cacheExpiration,
 		Timeout:    cacheTimeout,
 	})
-	defer cache.Close()
+	defer myCache.Close()
 
 	log.Info("configuring database (PostgreSQL)")
 
@@ -93,7 +80,7 @@ func Run(cfg *config.Config) {
 
 	models := repository.NewModels(db)
 
-	service := service.New(
+	myService := service.New(
 		service.Config{
 			Host:           cfg.Host,
 			Port:           cfg.Port,
@@ -114,16 +101,16 @@ func Run(cfg *config.Config) {
 			Logger: log,
 			DB:     db,
 			Mailer: mailer,
-			Cache:  cache,
+			Cache:  myCache,
 			Models: models,
 			Wg:     &sync.WaitGroup{},
 		},
 	)
 
-	handler := v1.NewHandler(service)
-	srv := server.New(handler, service.Port) // TODO: tls certificate
+	handler := v1.NewHandler(myService)
+	srv := server.New(handler, myService.Port) // TODO: tls certificate
 
-	if err = server.Run(srv, service); err != nil {
+	if err = server.Run(srv, myService); err != nil {
 		log.Fatal(err)
 	}
 }

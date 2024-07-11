@@ -53,7 +53,7 @@ func (s *UserService) ActivationRequest(user *models.User) error {
 		)
 	}
 
-	email := &rabbitmq.Email{
+	email := &models.Email{
 		To: rabbitmq.Receiver{
 			Email: user.Email,
 			Login: user.Login,
@@ -144,7 +144,7 @@ func (s *UserService) ResetPasswordRequest(emailAddr string) error {
 		)
 	}
 
-	email := &rabbitmq.Email{
+	email := &models.Email{
 		To: rabbitmq.Receiver{
 			Email: user.Email,
 			Login: user.Login,

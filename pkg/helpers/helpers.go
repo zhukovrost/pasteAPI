@@ -108,15 +108,6 @@ func ReadBool(qs url.Values, key string, defaultValue bool) bool {
 	return defaultValue
 }
 
-// ReadCSV reads a comma-separated value for the given key from the query string
-// and returns a slice of strings. If the key does not exist, it returns the default slice.
-func ReadCSV(qs url.Values, key string, defaultValue []string) []string {
-	if value, exists := qs[key]; exists && len(value) > 0 {
-		return strings.Split(value[0], ",")
-	}
-	return defaultValue
-}
-
 // ReadInt reads an integer value for the given key from the query string.
 // If the key does not exist or is not a valid integer, it returns the default value.
 func ReadInt(qs url.Values, key string, defaultValue int, v *validator.MyValidator) int {
