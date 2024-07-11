@@ -29,9 +29,7 @@ func (s *emailService) sendEmail(email *rabbitmq.Email) error {
 	ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
 	defer cancel()
 
-	// TODO: fix it
-	go s.PublishMessage(ctx, "application/json", emailJSON)
-	return nil
+	return s.PublishMessage(ctx, "application/json", emailJSON)
 }
 
 func (s *emailService) sendActivationEmail(email *rabbitmq.Email) error {

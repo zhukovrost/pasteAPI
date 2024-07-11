@@ -138,26 +138,26 @@ func (s *PasteService) GetPaste(id uint16, user *models.User) (*models.Paste, er
 }
 
 func (s *PasteService) Delete(id uint16) error {
-	helpers.Background(s.wg, s.log, func() {
-		// Delete paste from cache as well
-		key := pasteKey(id)
-		in, err := s.cache.Exists(key)
+	err := s.repo.Delete(id)
+	if err != nil {
+		return err
+	}
 
-		// TODO: rethink error handling at this moment
-		if err != nil {
-			s.log.Error(err)
-		}
+	// Delete paste from cache as well
+	key := pasteKey(id)
+	in, err := s.cache.Exists(key)
+	if err != nil {
+		return err
+	}
 
-		if in && s.cache.Delete(key) != nil {
-			s.log.Error(err)
-		}
+	if !in {
+		return nil
+	}
 
-		if in && s.cache.Invalidate("search:*") != nil {
-			s.log.Error(err)
-		}
-	})
-
-	return s.repo.Delete(id)
+	if err := s.cache.Delete(key); err != nil {
+		return err
+	}
+	return s.cache.Invalidate("search:*")
 }
 
 func (s *PasteService) Create(paste *models.Paste, creator *models.User) error {

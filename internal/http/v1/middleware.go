@@ -10,9 +10,11 @@ import (
 	"github.com/zhukovrost/pasteAPI/internal/service"
 	"github.com/zhukovrost/pasteAPI/pkg/helpers"
 	"github.com/zhukovrost/pasteAPI/pkg/validator"
+	"golang.org/x/time/rate"
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -40,30 +42,52 @@ func (h *Handler) DebugRequest(next http.Handler) http.Handler {
 }
 
 func (h *Handler) RateLimit(next http.Handler) http.Handler {
+	type client struct {
+		limiter  *rate.Limiter
+		lastSeen time.Time
+	}
+
+	var (
+		mu      sync.Mutex
+		clients = make(map[string]*client) // in-memory cache (memory loss)
+	)
+
+	go func() {
+		for {
+			time.Sleep(time.Minute)
+			mu.Lock()
+			for ip, client := range clients {
+				if time.Since(client.lastSeen) > 3*time.Minute {
+					delete(clients, ip)
+				}
+			}
+			mu.Unlock()
+		}
+	}()
+
+	cfg := h.services.Config.Limiter
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO: fix
-		if !h.services.Config.Limiter.Enabled {
-			next.ServeHTTP(w, r)
-			return
+		if cfg.Enabled {
+			ip, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err != nil {
+				h.ServerErrorResponse(w, r, err)
+				return
+			}
+			mu.Lock()
+			if _, found := clients[ip]; !found {
+				clients[ip] = &client{
+					limiter: rate.NewLimiter(rate.Limit(cfg.RPS), cfg.Burst),
+				}
+			}
+			clients[ip].lastSeen = time.Now()
+			if !clients[ip].limiter.Allow() {
+				mu.Unlock()
+				h.RateLimitExceededResponse(w, r)
+				return
+			}
+			mu.Unlock()
 		}
-
-		ip, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			h.ServerErrorResponse(w, r, err)
-			return
-		}
-
-		requests, err := h.services.Deps.Cache.RateLimiter(ip)
-		if err != nil {
-			h.ServerErrorResponse(w, r, err)
-			return
-		}
-
-		if requests > int64(h.services.Config.Limiter.Burst) {
-			h.RateLimitExceededResponse(w, r)
-			return
-		}
-
 		next.ServeHTTP(w, r)
 	})
 }
