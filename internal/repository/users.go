@@ -6,16 +6,13 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
+	"github.com/zhukovrost/pasteAPI/pkg/postgres"
 	"strings"
 	"time"
 )
 
-var (
-	ErrDuplicate = errors.New("duplicate email or login")
-)
-
 type UserModel struct {
-	DB *sql.DB
+	DB postgres.Database
 }
 
 func (m *UserModel) Create(user *models.User) error {
@@ -31,7 +28,7 @@ func (m *UserModel) Create(user *models.User) error {
 	if err != nil {
 		switch {
 		case strings.HasPrefix(err.Error(), `pq: duplicate key value`):
-			return ErrDuplicate
+			return ErrDuplicateUser
 		default:
 			return err
 		}
@@ -96,7 +93,7 @@ func (m *UserModel) Update(user *models.User) error {
 	if err != nil {
 		switch {
 		case strings.HasPrefix(err.Error(), `pq: duplicate key value`):
-			return ErrDuplicate
+			return ErrDuplicateUser
 		case errors.Is(err, sql.ErrNoRows):
 			return ErrEditConflict
 		default:

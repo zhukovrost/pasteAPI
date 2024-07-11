@@ -71,6 +71,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "boolean",
+                        "description": "Get pastes, which current user can update",
+                        "name": "onlyUsers",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "Sort order, e.g., -created_at",
                         "name": "sort",
@@ -93,7 +99,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully retrieved paste",
                         "schema": {
-                            "$ref": "#/definitions/v1.ListPastesOutput"
+                            "$ref": "#/definitions/service.ListPastesOutput"
                         }
                     },
                     "422": {
@@ -140,7 +146,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.CreatePasteInput"
+                            "$ref": "#/definitions/service.CreatePasteInput"
                         }
                     }
                 ],
@@ -148,7 +154,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Successfully created paste",
                         "schema": {
-                            "$ref": "#/definitions/v1.PasteResp"
+                            "$ref": "#/definitions/service.PasteResp"
                         },
                         "headers": {
                             "Location": {
@@ -207,7 +213,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully retrieved paste",
                         "schema": {
-                            "$ref": "#/definitions/v1.PasteResp"
+                            "$ref": "#/definitions/service.PasteResp"
                         }
                     },
                     "404": {
@@ -313,7 +319,7 @@ const docTemplate = `{
                         "name": "body",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/v1.UpdatePasteInput"
+                            "$ref": "#/definitions/service.UpdatePasteInput"
                         }
                     }
                 ],
@@ -321,7 +327,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully updated paste",
                         "schema": {
-                            "$ref": "#/definitions/v1.PasteResp"
+                            "$ref": "#/definitions/service.PasteResp"
                         }
                     },
                     "400": {
@@ -338,6 +344,12 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/v1.ErrorResponse"
                         }
@@ -363,7 +375,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/pastes/{id}/permission/{user_id}": {
+        "/api/v1/pastes/{id}/permission/{userLogin}": {
             "put": {
                 "security": [
                     {
@@ -388,9 +400,9 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "User ID",
-                        "name": "user_id",
+                        "name": "userLogin",
                         "in": "path",
                         "required": true
                     }
@@ -399,13 +411,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully gave permission",
                         "schema": {
-                            "$ref": "#/definitions/v1.PastePermissionResponse"
-                        },
-                        "headers": {
-                            "Location": {
-                                "type": "string",
-                                "description": "URL of the newly created paste"
-                            }
+                            "$ref": "#/definitions/service.PastePermissionResponse"
                         }
                     },
                     "404": {
@@ -450,7 +456,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.AuthInput"
+                            "$ref": "#/definitions/service.AuthInput"
                         }
                     }
                 ],
@@ -458,7 +464,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Successfully created",
                         "schema": {
-                            "$ref": "#/definitions/v1.AuthResp"
+                            "$ref": "#/definitions/service.AuthResp"
                         }
                     },
                     "400": {
@@ -515,7 +521,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.ResetPasswordInput"
+                            "$ref": "#/definitions/service.ResetPasswordInput"
                         }
                     }
                 ],
@@ -523,7 +529,7 @@ const docTemplate = `{
                     "202": {
                         "description": "Successfully accepted",
                         "schema": {
-                            "$ref": "#/definitions/v1.ResetPasswordResp"
+                            "$ref": "#/definitions/service.MessageResp"
                         }
                     },
                     "400": {
@@ -554,6 +560,47 @@ const docTemplate = `{
             }
         },
         "/api/v1/users/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves the logged user data.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Logged user data",
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved user data",
+                        "schema": {
+                            "$ref": "#/definitions/service.UserResp"
+                        }
+                    },
+                    "401": {
+                        "description": "User is not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Creates a new user in the database by input data.",
                 "consumes": [
@@ -573,7 +620,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.RegistrationInput"
+                            "$ref": "#/definitions/service.RegistrationInput"
                         }
                     }
                 ],
@@ -581,7 +628,7 @@ const docTemplate = `{
                     "202": {
                         "description": "Successfully accepted",
                         "schema": {
-                            "$ref": "#/definitions/v1.UserResp"
+                            "$ref": "#/definitions/service.UserResp"
                         }
                     },
                     "400": {
@@ -631,7 +678,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.ActivateUserInput"
+                            "$ref": "#/definitions/service.ActivateUserInput"
                         }
                     }
                 ],
@@ -639,7 +686,7 @@ const docTemplate = `{
                     "202": {
                         "description": "Successfully accepted",
                         "schema": {
-                            "$ref": "#/definitions/v1.UserResp"
+                            "$ref": "#/definitions/service.UserResp"
                         }
                     },
                     "400": {
@@ -650,6 +697,44 @@ const docTemplate = `{
                     },
                     "422": {
                         "description": "Unprocessable data",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests, rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/activation-email": {
+            "post": {
+                "description": "Activates the user by input token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Activation",
+                "responses": {
+                    "200": {
+                        "description": "Successfully resent",
+                        "schema": {
+                            "$ref": "#/definitions/service.MessageResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
                         "schema": {
                             "$ref": "#/definitions/v1.ErrorResponse"
                         }
@@ -689,7 +774,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.UpdatePasswordInput"
+                            "$ref": "#/definitions/service.UpdatePasswordInput"
                         }
                     }
                 ],
@@ -697,7 +782,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully reset",
                         "schema": {
-                            "$ref": "#/definitions/v1.UpdatePasswordResponse"
+                            "$ref": "#/definitions/service.MessageResp"
                         }
                     },
                     "400": {
@@ -752,6 +837,9 @@ const docTemplate = `{
         "models.Paste": {
             "type": "object",
             "properties": {
+                "can_edit": {
+                    "type": "boolean"
+                },
                 "category": {
                     "type": "integer"
                 },
@@ -771,6 +859,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.Permission": {
+            "type": "object",
+            "properties": {
+                "paste_id": {
+                    "type": "integer"
+                },
+                "user_id": {
                     "type": "integer"
                 }
             }
@@ -806,7 +905,7 @@ const docTemplate = `{
                 }
             }
         },
-        "v1.ActivateUserInput": {
+        "service.ActivateUserInput": {
             "type": "object",
             "properties": {
                 "token": {
@@ -814,7 +913,7 @@ const docTemplate = `{
                 }
             }
         },
-        "v1.AuthInput": {
+        "service.AuthInput": {
             "type": "object",
             "properties": {
                 "email": {
@@ -825,7 +924,7 @@ const docTemplate = `{
                 }
             }
         },
-        "v1.AuthResp": {
+        "service.AuthResp": {
             "type": "object",
             "properties": {
                 "authentication_token": {
@@ -833,7 +932,7 @@ const docTemplate = `{
                 }
             }
         },
-        "v1.CreatePasteInput": {
+        "service.CreatePasteInput": {
             "type": "object",
             "properties": {
                 "category": {
@@ -847,6 +946,102 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "service.ListPastesOutput": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "$ref": "#/definitions/models.Metadata"
+                },
+                "pastes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Paste"
+                    }
+                }
+            }
+        },
+        "service.MessageResp": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.PastePermissionResponse": {
+            "type": "object",
+            "properties": {
+                "permission": {
+                    "$ref": "#/definitions/models.Permission"
+                }
+            }
+        },
+        "service.PasteResp": {
+            "type": "object",
+            "properties": {
+                "paste": {
+                    "$ref": "#/definitions/models.Paste"
+                }
+            }
+        },
+        "service.RegistrationInput": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.ResetPasswordInput": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.UpdatePasswordInput": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.UpdatePasteInput": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "integer"
+                },
+                "minutes": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.UserResp": {
+            "type": "object",
+            "properties": {
+                "user": {
+                    "$ref": "#/definitions/models.User"
                 }
             }
         },
@@ -874,118 +1069,6 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                }
-            }
-        },
-        "v1.ListPastesOutput": {
-            "type": "object",
-            "properties": {
-                "metadata": {
-                    "$ref": "#/definitions/models.Metadata"
-                },
-                "pastes": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Paste"
-                    }
-                }
-            }
-        },
-        "v1.PastePermissionResponse": {
-            "type": "object",
-            "properties": {
-                "permission": {
-                    "type": "object",
-                    "properties": {
-                        "paste_id": {
-                            "type": "integer"
-                        },
-                        "user_id": {
-                            "type": "integer"
-                        }
-                    }
-                }
-            }
-        },
-        "v1.PasteResp": {
-            "type": "object",
-            "properties": {
-                "paste": {
-                    "$ref": "#/definitions/models.Paste"
-                }
-            }
-        },
-        "v1.RegistrationInput": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "login": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.ResetPasswordInput": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.ResetPasswordResp": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.UpdatePasswordInput": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.UpdatePasswordResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.UpdatePasteInput": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "integer"
-                },
-                "minutes": {
-                    "type": "integer"
-                },
-                "text": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.UserResp": {
-            "type": "object",
-            "properties": {
-                "user": {
-                    "$ref": "#/definitions/models.User"
                 }
             }
         }

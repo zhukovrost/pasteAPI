@@ -13,7 +13,7 @@ type ErrorResponse struct {
 }
 
 func (h *Handler) LogError(r *http.Request, err error) {
-	h.service.Deps.Logger.WithFields(map[string]interface{}{
+	h.services.Deps.Logger.WithFields(map[string]interface{}{
 		"request_method": r.Method,
 		"request_url":    r.URL.Path,
 	}).Error(err)

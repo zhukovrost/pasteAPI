@@ -11,6 +11,7 @@ import (
 	"github.com/zhukovrost/pasteAPI/pkg/logger"
 	"github.com/zhukovrost/pasteAPI/pkg/postgres"
 	"github.com/zhukovrost/pasteAPI/pkg/rabbitmq"
+	"sync"
 
 	"time"
 )
@@ -20,21 +21,8 @@ func Run(cfg *config.Config) {
 
 	log.Info("configuring mailer (RabbitMQ)")
 
-	mailerWaitTime, err := time.ParseDuration(cfg.RabbitMQ.WaitTime)
-	if err != nil {
-		mailerWaitTime = 5 * time.Second // default
-	}
-
-	mailerTimeout, err := time.ParseDuration(cfg.RabbitMQ.Timeout)
-	if err != nil {
-		mailerTimeout = 5 * time.Second // default
-	}
-
 	mailer, err := rabbitmq.New(rabbitmq.Config{
 		URL:          cfg.RabbitMQ.URL,
-		WaitTime:     mailerWaitTime,
-		Timeout:      mailerTimeout,
-		Attempts:     cfg.RabbitMQ.Attempts,
 		Exchange:     cfg.RabbitMQ.Exchange,
 		ExchangeType: cfg.RabbitMQ.ExchangeType,
 		Queue:        cfg.RabbitMQ.Queue,
@@ -46,26 +34,20 @@ func Run(cfg *config.Config) {
 
 	defer mailer.Close()
 
-	log.Info("configuring cache (Redis)")
+	log.Info("configuring cache (Cache)")
 
 	cacheExpiration, err := time.ParseDuration(cfg.Redis.Expiration)
 	if err != nil {
 		cacheExpiration = 15 * time.Minute // default
 	}
 
-	cacheTimeout, err := time.ParseDuration(cfg.Redis.Timeout)
-	if err != nil {
-		cacheTimeout = 5 * time.Second // default
-	}
-
-	cache := cache.New(cache.Config{
+	myCache := cache.New(cache.Config{
 		Addr:       cfg.Redis.Host + ":" + cfg.Redis.Port,
 		Password:   cfg.Redis.Password,
 		DB:         cfg.Redis.DB,
 		Expiration: cacheExpiration,
-		Timeout:    cacheTimeout,
 	})
-	defer cache.CloseConn()
+	defer myCache.Close()
 
 	log.Info("configuring database (PostgreSQL)")
 
@@ -74,7 +56,8 @@ func Run(cfg *config.Config) {
 		idleConnsDur = 10 * time.Minute // default
 	}
 
-	db, err := postgres.OpenDB(postgres.Config{
+	db := &postgres.Connection{}
+	err = db.OpenDB(postgres.Config{
 		DSN:          cfg.DB.DSN,
 		MaxIdleTime:  idleConnsDur,
 		MaxOpenConns: cfg.DB.MaxOpenConns,
@@ -89,8 +72,10 @@ func Run(cfg *config.Config) {
 
 	log.Info("service connections are established")
 
-	service := service.New(
-		&service.Config{
+	models := repository.NewModels(db)
+
+	myService := service.New(
+		service.Config{
 			Host:           cfg.Host,
 			Port:           cfg.Port,
 			Env:            cfg.Env,
@@ -106,19 +91,20 @@ func Run(cfg *config.Config) {
 			BuildTime: config.BuildTime,
 			Version:   config.Version,
 		},
-		&service.Dependencies{
+		service.Dependencies{
 			Logger: log,
 			DB:     db,
 			Mailer: mailer,
-			Redis:  cache,
+			Cache:  myCache,
+			Models: models,
+			Wg:     &sync.WaitGroup{},
 		},
-		repository.NewModels(db),
 	)
 
-	handler := v1.NewHandler(service)
-	srv := server.New(handler, service.Port)
+	handler := v1.NewHandler(myService)
+	srv := server.New(handler, myService.Port) // TODO: tls certificate
 
-	if err = server.Run(srv, service); err != nil {
+	if err = server.Run(srv, myService); err != nil {
 		log.Fatal(err)
 	}
 }

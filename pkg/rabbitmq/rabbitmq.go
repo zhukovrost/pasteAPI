@@ -14,11 +14,13 @@ const (
 	PasswordReset EmailType = "password-reset"
 )
 
+type Mailer interface {
+	PublishMessage(ctx context.Context, contentType string, body []byte) error
+	Close() error
+}
+
 type Config struct {
 	URL          string
-	WaitTime     time.Duration
-	Timeout      time.Duration
-	Attempts     int
 	Exchange     string
 	ExchangeType string
 	Queue        string
@@ -28,12 +30,6 @@ type Connection struct {
 	Config
 	Connection *amqp.Connection
 	Channel    *amqp.Channel
-}
-
-type Email struct {
-	To      Receiver  `json:"to"`
-	Type    EmailType `json:"type"`
-	Message string    `json:"message"`
 }
 
 type Receiver struct {
@@ -83,13 +79,13 @@ func New(cfg Config) (*Connection, error) {
 
 func (c *Connection) attemptConnect() error {
 	var err error
-	for i := c.Attempts; i > 0; i-- {
+	for i := 5; i > 0; i-- {
 		if err = c.connect(); err == nil {
 			break
 		}
 
 		log.Printf("RabbitMQ is trying to connect, attempts left: %d", i)
-		time.Sleep(c.WaitTime)
+		time.Sleep(5 * time.Second)
 	}
 
 	if err != nil {

@@ -14,6 +14,8 @@ definitions:
     type: object
   models.Paste:
     properties:
+      can_edit:
+        type: boolean
       category:
         type: integer
       created_at:
@@ -27,6 +29,13 @@ definitions:
       title:
         type: string
       version:
+        type: integer
+    type: object
+  models.Permission:
+    properties:
+      paste_id:
+        type: integer
+      user_id:
         type: integer
     type: object
   models.Token:
@@ -49,24 +58,24 @@ definitions:
       login:
         type: string
     type: object
-  v1.ActivateUserInput:
+  service.ActivateUserInput:
     properties:
       token:
         type: string
     type: object
-  v1.AuthInput:
+  service.AuthInput:
     properties:
       email:
         type: string
       password:
         type: string
     type: object
-  v1.AuthResp:
+  service.AuthResp:
     properties:
       authentication_token:
         $ref: '#/definitions/models.Token'
     type: object
-  v1.CreatePasteInput:
+  service.CreatePasteInput:
     properties:
       category:
         type: integer
@@ -76,6 +85,67 @@ definitions:
         type: string
       title:
         type: string
+    type: object
+  service.ListPastesOutput:
+    properties:
+      metadata:
+        $ref: '#/definitions/models.Metadata'
+      pastes:
+        items:
+          $ref: '#/definitions/models.Paste'
+        type: array
+    type: object
+  service.MessageResp:
+    properties:
+      message:
+        type: string
+    type: object
+  service.PastePermissionResponse:
+    properties:
+      permission:
+        $ref: '#/definitions/models.Permission'
+    type: object
+  service.PasteResp:
+    properties:
+      paste:
+        $ref: '#/definitions/models.Paste'
+    type: object
+  service.RegistrationInput:
+    properties:
+      email:
+        type: string
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  service.ResetPasswordInput:
+    properties:
+      email:
+        type: string
+    type: object
+  service.UpdatePasswordInput:
+    properties:
+      password:
+        type: string
+      token:
+        type: string
+    type: object
+  service.UpdatePasteInput:
+    properties:
+      category:
+        type: integer
+      minutes:
+        type: integer
+      text:
+        type: string
+      title:
+        type: string
+    type: object
+  service.UserResp:
+    properties:
+      user:
+        $ref: '#/definitions/models.User'
     type: object
   v1.ErrorResponse:
     properties:
@@ -93,77 +163,6 @@ definitions:
           version:
             type: string
         type: object
-    type: object
-  v1.ListPastesOutput:
-    properties:
-      metadata:
-        $ref: '#/definitions/models.Metadata'
-      pastes:
-        items:
-          $ref: '#/definitions/models.Paste'
-        type: array
-    type: object
-  v1.PastePermissionResponse:
-    properties:
-      permission:
-        properties:
-          paste_id:
-            type: integer
-          user_id:
-            type: integer
-        type: object
-    type: object
-  v1.PasteResp:
-    properties:
-      paste:
-        $ref: '#/definitions/models.Paste'
-    type: object
-  v1.RegistrationInput:
-    properties:
-      email:
-        type: string
-      login:
-        type: string
-      password:
-        type: string
-    type: object
-  v1.ResetPasswordInput:
-    properties:
-      email:
-        type: string
-    type: object
-  v1.ResetPasswordResp:
-    properties:
-      message:
-        type: string
-    type: object
-  v1.UpdatePasswordInput:
-    properties:
-      password:
-        type: string
-      token:
-        type: string
-    type: object
-  v1.UpdatePasswordResponse:
-    properties:
-      message:
-        type: string
-    type: object
-  v1.UpdatePasteInput:
-    properties:
-      category:
-        type: integer
-      minutes:
-        type: integer
-      text:
-        type: string
-      title:
-        type: string
-    type: object
-  v1.UserResp:
-    properties:
-      user:
-        $ref: '#/definitions/models.User'
     type: object
 host: localhost:8080
 info:
@@ -206,6 +205,10 @@ paths:
         in: query
         name: category
         type: integer
+      - description: Get pastes, which current user can update
+        in: query
+        name: onlyUsers
+        type: boolean
       - description: Sort order, e.g., -created_at
         in: query
         name: sort
@@ -224,7 +227,7 @@ paths:
         "200":
           description: Successfully retrieved paste
           schema:
-            $ref: '#/definitions/v1.ListPastesOutput'
+            $ref: '#/definitions/service.ListPastesOutput'
         "422":
           description: Unprocessing data
           schema:
@@ -250,7 +253,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/v1.CreatePasteInput'
+          $ref: '#/definitions/service.CreatePasteInput'
       produces:
       - application/json
       responses:
@@ -261,7 +264,7 @@ paths:
               description: URL of the newly created paste
               type: string
           schema:
-            $ref: '#/definitions/v1.PasteResp'
+            $ref: '#/definitions/service.PasteResp'
         "400":
           description: Bad request
           schema:
@@ -332,7 +335,7 @@ paths:
         "200":
           description: Successfully retrieved paste
           schema:
-            $ref: '#/definitions/v1.PasteResp'
+            $ref: '#/definitions/service.PasteResp'
         "404":
           description: Paste not found
           schema:
@@ -362,14 +365,14 @@ paths:
         in: body
         name: body
         schema:
-          $ref: '#/definitions/v1.UpdatePasteInput'
+          $ref: '#/definitions/service.UpdatePasteInput'
       produces:
       - application/json
       responses:
         "200":
           description: Successfully updated paste
           schema:
-            $ref: '#/definitions/v1.PasteResp'
+            $ref: '#/definitions/service.PasteResp'
         "400":
           description: Bad request
           schema:
@@ -380,6 +383,10 @@ paths:
             $ref: '#/definitions/v1.ErrorResponse'
         "404":
           description: Not found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
         "422":
@@ -399,7 +406,7 @@ paths:
       summary: Update the paste
       tags:
       - pastes
-  /api/v1/pastes/{id}/permission/{user_id}:
+  /api/v1/pastes/{id}/permission/{userLogin}:
     put:
       description: Gives a permission to user in the url to update / delete paste
         in the url.
@@ -411,20 +418,16 @@ paths:
         type: integer
       - description: User ID
         in: path
-        name: user_id
+        name: userLogin
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: Successfully gave permission
-          headers:
-            Location:
-              description: URL of the newly created paste
-              type: string
           schema:
-            $ref: '#/definitions/v1.PastePermissionResponse'
+            $ref: '#/definitions/service.PastePermissionResponse'
         "404":
           description: Not found
           schema:
@@ -454,14 +457,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/v1.AuthInput'
+          $ref: '#/definitions/service.AuthInput'
       produces:
       - application/json
       responses:
         "201":
           description: Successfully created
           schema:
-            $ref: '#/definitions/v1.AuthResp'
+            $ref: '#/definitions/service.AuthResp'
         "400":
           description: Bad request
           schema:
@@ -498,14 +501,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/v1.ResetPasswordInput'
+          $ref: '#/definitions/service.ResetPasswordInput'
       produces:
       - application/json
       responses:
         "202":
           description: Successfully accepted
           schema:
-            $ref: '#/definitions/v1.ResetPasswordResp'
+            $ref: '#/definitions/service.MessageResp'
         "400":
           description: Bad request
           schema:
@@ -527,6 +530,32 @@ paths:
       - users
       - tokens
   /api/v1/users/:
+    get:
+      description: Retrieves the logged user data.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved user data
+          schema:
+            $ref: '#/definitions/service.UserResp'
+        "401":
+          description: User is not authorized
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logged user data
+      tags:
+      - users
     post:
       consumes:
       - application/json
@@ -537,14 +566,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/v1.RegistrationInput'
+          $ref: '#/definitions/service.RegistrationInput'
       produces:
       - application/json
       responses:
         "202":
           description: Successfully accepted
           schema:
-            $ref: '#/definitions/v1.UserResp'
+            $ref: '#/definitions/service.UserResp'
         "400":
           description: Bad request
           schema:
@@ -575,20 +604,45 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/v1.ActivateUserInput'
+          $ref: '#/definitions/service.ActivateUserInput'
       produces:
       - application/json
       responses:
         "202":
           description: Successfully accepted
           schema:
-            $ref: '#/definitions/v1.UserResp'
+            $ref: '#/definitions/service.UserResp'
         "400":
           description: Bad request
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
         "422":
           description: Unprocessable data
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Activation
+      tags:
+      - users
+  /api/v1/users/activation-email:
+    post:
+      description: Activates the user by input token.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully resent
+          schema:
+            $ref: '#/definitions/service.MessageResp'
+        "400":
+          description: Bad request
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
         "429":
@@ -613,14 +667,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/v1.UpdatePasswordInput'
+          $ref: '#/definitions/service.UpdatePasswordInput'
       produces:
       - application/json
       responses:
         "200":
           description: Successfully reset
           schema:
-            $ref: '#/definitions/v1.UpdatePasswordResponse'
+            $ref: '#/definitions/service.MessageResp'
         "400":
           description: Bad request
           schema:

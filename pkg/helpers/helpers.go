@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/sirupsen/logrus"
 	"github.com/zhukovrost/pasteAPI/pkg/validator"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Envelope map[string]interface{}
@@ -96,18 +98,19 @@ func ReadString(qs url.Values, key string, defaultValue string) string {
 	return defaultValue
 }
 
-// ReadCSV reads a comma-separated value for the given key from the query string
-// and returns a slice of strings. If the key does not exist, it returns the default slice.
-func ReadCSV(qs url.Values, key string, defaultValue []string) []string {
+func ReadBool(qs url.Values, key string, defaultValue bool) bool {
 	if value, exists := qs[key]; exists && len(value) > 0 {
-		return strings.Split(value[0], ",")
+		boolValue, err := strconv.ParseBool(value[0])
+		if err == nil {
+			return boolValue
+		}
 	}
 	return defaultValue
 }
 
 // ReadInt reads an integer value for the given key from the query string.
 // If the key does not exist or is not a valid integer, it returns the default value.
-func ReadInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+func ReadInt(qs url.Values, key string, defaultValue int, v *validator.MyValidator) int {
 	if value, exists := qs[key]; exists && len(value) > 0 {
 		if intValue, err := strconv.Atoi(value[0]); err == nil && intValue >= 0 {
 			return intValue
@@ -116,4 +119,19 @@ func ReadInt(qs url.Values, key string, defaultValue int, v *validator.Validator
 		}
 	}
 	return defaultValue
+}
+
+func Background(wg *sync.WaitGroup, log *logrus.Logger, fn func()) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		// Recover any panic.
+		defer func() {
+			if err := recover(); err != nil {
+				log.Error(err)
+			}
+		}()
+
+		fn()
+	}()
 }

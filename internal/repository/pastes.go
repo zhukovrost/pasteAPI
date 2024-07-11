@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
+	"github.com/zhukovrost/pasteAPI/pkg/postgres"
 	"time"
 )
 
 type PasteModel struct {
-	DB *sql.DB
+	DB postgres.Database
 }
 
 // === CRUD OPERATIONS ===
@@ -34,8 +35,8 @@ func (m *PasteModel) Read(id uint16) (*models.Paste, error) {
 		return nil, ErrRecordNotFound
 	}
 	query := `
-		SELECT id, title, category, text, created_at, expires_at, version 
-		FROM pastes 
+		SELECT id, title, category, text, created_at, expires_at, version
+		FROM pastes
 		WHERE id = $1 AND expires_at >= NOW()`
 
 	var paste models.Paste
@@ -67,11 +68,11 @@ func (m *PasteModel) Read(id uint16) (*models.Paste, error) {
 
 func (m *PasteModel) ReadAll(title string, category uint8, filters models.Filters) ([]*models.Paste, *models.Metadata, error) {
 	query := fmt.Sprintf(`
-		SELECT COUNT(*) OVER(), id, title, category, text, created_at, expires_at, version 
-		FROM pastes 
+		SELECT COUNT(*) OVER(), id, title, category, text, created_at, expires_at, version
+		FROM pastes
 		WHERE expires_at >= NOW()
-		AND ($1 = '' or (to_tsvector('english', title) @@ plainto_tsquery($1)) or (to_tsvector('russian', title) @@ plainto_tsquery($1)))
-		AND (category = $2 or $2 = 0)
+		AND ($1 = '' OR (to_tsvector('english', title) @@ plainto_tsquery($1)) OR (to_tsvector('russian', title) @@ plainto_tsquery($1)))
+		AND (category = $2 OR $2 = 0)
 		ORDER BY %s %s, id ASC
 		LIMIT $3 OFFSET $4`, filters.SortColumn(), filters.SortDirection())
 
@@ -83,6 +84,43 @@ func (m *PasteModel) ReadAll(title string, category uint8, filters models.Filter
 		return nil, &models.Metadata{}, err
 	}
 
+	return m.readAllBase(rows, filters)
+}
+
+func (m *PasteModel) ReadUserPastes(title string, category uint8, user *models.User, filters models.Filters) ([]*models.Paste, *models.Metadata, error) {
+	query := fmt.Sprintf(`
+		SELECT COUNT(*) OVER(), p.id, p.title, p.category, p.text, p.created_at, p.expires_at, p.version
+		FROM pastes p
+		WHERE p.expires_at >= NOW()
+		AND ($1 = '' OR (to_tsvector('english', p.title) @@ plainto_tsquery($1)) OR (to_tsvector('russian', p.title) @@ plainto_tsquery($1)))
+		AND (p.category = $2 OR $2 = 0)
+		AND COALESCE((SELECT true FROM write_permissions wp WHERE wp.paste_id = p.id AND wp.user_id = $5), false) = true
+		ORDER BY %s %s, p.id ASC
+		LIMIT $3 OFFSET $4`, filters.SortColumn(), filters.SortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	rows, err := m.DB.QueryContext(ctx, query, title, category, filters.Limit(), filters.Offset(), user.ID)
+	if err != nil {
+		return nil, &models.Metadata{}, err
+	}
+
+	pastes, metadata, err := m.readAllBase(rows, filters)
+	if err != nil {
+		return nil, &models.Metadata{}, err
+	}
+
+	if user.Activated {
+		for _, paste := range pastes {
+			paste.CanEdit = true
+		}
+	}
+
+	return pastes, metadata, nil
+}
+
+func (m *PasteModel) readAllBase(rows *sql.Rows, filters models.Filters) ([]*models.Paste, *models.Metadata, error) {
 	defer rows.Close()
 
 	pastes := make([]*models.Paste, 0)
@@ -101,6 +139,7 @@ func (m *PasteModel) ReadAll(title string, category uint8, filters models.Filter
 			&paste.ExpiresAt,
 			&paste.Version,
 		)
+
 		if err != nil {
 			return nil, &models.Metadata{}, err
 		}
@@ -108,7 +147,7 @@ func (m *PasteModel) ReadAll(title string, category uint8, filters models.Filter
 		pastes = append(pastes, &paste)
 	}
 
-	if err = rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, &models.Metadata{}, err
 	}
 
