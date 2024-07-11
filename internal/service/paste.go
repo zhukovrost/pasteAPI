@@ -21,9 +21,9 @@ func pasteKey(id uint16) string {
 }
 
 // searchKey generates the key for search result
-// pattern: search:title:category:onlyUsers:sort:page:pagesize
-func searchKey(settings SearchSettings) string {
-	return fmt.Sprintf("search:%s:%d:%v:%s:%d:%d", settings.Title, settings.Category, settings.OnlyUsers, settings.Filters.Sort, settings.Filters.Page, settings.Filters.PageSize)
+// pattern: search:title:category:onlyUsers:sort:page:pagesize:token
+func searchKey(settings SearchSettings, userId int64) string {
+	return fmt.Sprintf("search:%s:%d:%v:%s:%d:%d:%d", settings.Title, settings.Category, settings.OnlyUsers, settings.Filters.Sort, settings.Filters.Page, settings.Filters.PageSize, userId)
 }
 
 type PasteService struct {
@@ -45,7 +45,7 @@ func newPasteService(repo repository.Pastes, permissionsRepo repository.Permissi
 }
 
 func (s *PasteService) GetList(settings SearchSettings, user *models.User) (*ListPastesOutput, error) {
-	cacheKey := searchKey(settings)
+	cacheKey := searchKey(settings, user.ID)
 	listOutput := &ListPastesOutput{}
 	err := s.cache.Get(cacheKey, listOutput)
 
@@ -68,7 +68,7 @@ func (s *PasteService) GetList(settings SearchSettings, user *models.User) (*Lis
 		metadata *models.Metadata
 	)
 
-	if settings.OnlyUsers && !user.IsAnonymous() {
+	if settings.OnlyUsers {
 		pastes, metadata, err = s.repo.ReadUserPastes(settings.Title, settings.Category, user, settings.Filters)
 	} else {
 		pastes, metadata, err = s.repo.ReadAll(settings.Title, settings.Category, user, settings.Filters)
