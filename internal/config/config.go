@@ -45,7 +45,6 @@ type Config struct {
 		Port       string `yaml:"port" envconfig:"PASTE_REDIS_PORT"`
 		Password   string `yaml:"password" envconfig:"PASTE_REDIS_PASSWORD"`
 		DB         int    `yaml:"db" envconfig:"PASTE_REDIS_DB"`
-		Timeout    string `yaml:"timeout" envconfig:"PASTE_REDIS_TIMEOUT"`
 		Expiration string `yaml:"expiration" envconfig:"PASTE_REDIS_EXPIRATION"`
 	} `yaml:"redis"`
 	RabbitMQ struct {
@@ -111,7 +110,6 @@ func processFlags(cfg *Config) error {
 	flag.StringVar(&cfg.Redis.Port, "redis-port", cfg.Redis.Port, "Cache port")
 	flag.StringVar(&cfg.Redis.Password, "redis-password", cfg.Redis.Password, "Cache password")
 	flag.IntVar(&cfg.Redis.DB, "redis-db", cfg.Redis.DB, "Cache database")
-	flag.StringVar(&cfg.Redis.Timeout, "redis-timeout", cfg.Redis.Timeout, "Cache timeout")
 	flag.StringVar(&cfg.Redis.Expiration, "redis-expiration", cfg.Redis.Expiration, "Cache expiration duration")
 
 	flag.StringVar(&cfg.RabbitMQ.URL, "rabbitmq-url", cfg.RabbitMQ.URL, "rabbitmq url")

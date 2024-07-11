@@ -41,17 +41,11 @@ func Run(cfg *config.Config) {
 		cacheExpiration = 15 * time.Minute // default
 	}
 
-	cacheTimeout, err := time.ParseDuration(cfg.Redis.Timeout)
-	if err != nil {
-		cacheTimeout = 5 * time.Second // default
-	}
-
 	myCache := cache.New(cache.Config{
 		Addr:       cfg.Redis.Host + ":" + cfg.Redis.Port,
 		Password:   cfg.Redis.Password,
 		DB:         cfg.Redis.DB,
 		Expiration: cacheExpiration,
-		Timeout:    cacheTimeout,
 	})
 	defer myCache.Close()
 

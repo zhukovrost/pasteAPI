@@ -21,7 +21,6 @@ type Cache interface {
 	Exists(key string) (bool, error)
 	Invalidate(key string) error
 	Close() error
-	GetTimeout() time.Duration
 	RateLimiter(ip string) (int64, error)
 }
 
@@ -35,7 +34,6 @@ type Config struct {
 	Password   string
 	DB         int
 	Expiration time.Duration
-	Timeout    time.Duration
 }
 
 func New(c Config) *MyCache {
@@ -53,7 +51,7 @@ func New(c Config) *MyCache {
 }
 
 func (c *MyCache) Get(key string, result interface{}) error {
-	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	data, err := c.client.Get(ctx, key).Bytes()
@@ -65,7 +63,7 @@ func (c *MyCache) Get(key string, result interface{}) error {
 }
 
 func (c *MyCache) Set(key string, value interface{}) error {
-	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	data, err := json.Marshal(value)
@@ -77,7 +75,7 @@ func (c *MyCache) Set(key string, value interface{}) error {
 }
 
 func (c *MyCache) Exists(key string) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	exists, err := c.client.Exists(ctx, key).Result()
@@ -89,14 +87,14 @@ func (c *MyCache) Exists(key string) (bool, error) {
 }
 
 func (c *MyCache) Delete(key string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	return c.client.Del(ctx, key).Err()
 }
 
 func (c *MyCache) Invalidate(pattern string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	keys, err := c.client.Keys(ctx, pattern).Result()
@@ -121,14 +119,10 @@ func (c *MyCache) Close() error {
 	return c.client.Close()
 }
 
-func (c *MyCache) GetTimeout() time.Duration {
-	return c.Timeout
-}
-
 func (c *MyCache) RateLimiter(ip string) (int64, error) {
 	redisKey := fmt.Sprintf("client:%s", ip)
 
-	ctx, cancel := context.WithTimeout(context.Background(), c.GetTimeout())
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	pipe := c.client.TxPipeline()
