@@ -38,6 +38,7 @@ func NewRouter(handler *v1.Handler) http.Handler {
 			r.Put("/activated", handler.ActivateUserHandler)
 			r.Put("/password", handler.UpdatePasswordHandler)
 			r.Post("/activation-email", handler.RequireAuthenticatedUser(handler.ResendActivationEmail))
+			r.Get("/", handler.RequireAuthenticatedUser(handler.GetLoggedUserData))
 		})
 
 		r.Route("/tokens", func(r chi.Router) {

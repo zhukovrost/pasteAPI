@@ -194,3 +194,24 @@ func (h *Handler) UpdatePasswordHandler(w http.ResponseWriter, r *http.Request) 
 		h.ServerErrorResponse(w, r, err)
 	}
 }
+
+// GetLoggedUserData retrieves the logged user data
+//
+// @Summary      Logged user data
+// @Description  Retrieves the logged user data.
+// @Tags         users
+// @Produce      json
+// @Security BearerAuth
+// @Success      200  {object}  service.UserResp  "Successfully retrieved user data"
+// @Failure      401  {object}  ErrorResponse "User is not authorized"
+// @Failure 	 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
+// @Failure      500  {object}  ErrorResponse "Internal server error"
+// @Router       /api/v1/users/ [GET]
+func (h *Handler) GetLoggedUserData(w http.ResponseWriter, r *http.Request) {
+	user := auth.ContextGetUser(r)
+
+	err := helpers.WriteJSON(w, http.StatusOK, helpers.Envelope{"user": user}, nil)
+	if err != nil {
+		h.ServerErrorResponse(w, r, err)
+	}
+}

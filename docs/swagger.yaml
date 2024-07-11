@@ -530,6 +530,32 @@ paths:
       - users
       - tokens
   /api/v1/users/:
+    get:
+      description: Retrieves the logged user data.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved user data
+          schema:
+            $ref: '#/definitions/service.UserResp'
+        "401":
+          description: User is not authorized
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "429":
+          description: Too many requests, rate limit exceeded
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logged user data
+      tags:
+      - users
     post:
       consumes:
       - application/json
