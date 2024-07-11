@@ -12,6 +12,8 @@ var (
 	ErrEditConflict   = errors.New("edit conflict")
 	ErrUnauthorized   = errors.New("invalid authentication credentials")
 	ErrUnactivated    = errors.New("user email must be activated")
+	ErrDuplicateUser  = errors.New("email or login already exists")
+	ErrUserNotFound   = errors.New("user not found")
 )
 
 type Users interface {
@@ -36,7 +38,8 @@ type Tokens interface {
 }
 
 type Permissions interface {
-	SetWritePermission(userId int64, pasteId uint16) error
+	SetWritePermissionByLogin(userLogin string, pasteId uint16) (int64, error)
+	SetWritePermissionById(userId int64, pasteId uint16) error
 	CheckWritePermission(userId int64, pasteId uint16) (bool, error)
 }
 

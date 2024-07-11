@@ -11,7 +11,6 @@ import (
 	"github.com/zhukovrost/pasteAPI/pkg/helpers"
 	"github.com/zhukovrost/pasteAPI/pkg/validator"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -274,14 +273,14 @@ func (h *Handler) UpdatePasteHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags         users
 // @Produce      json
 // @Param        id   path   int   true       "Paste ID"
-// @Param        user_id   path   int   true       "User ID"
+// @Param        userLogin   path   string   true       "User ID"
 // @Security BearerAuth
-// @Header 200 {string} Location "URL of the newly created paste"
+// @Header       200 {string} Location "URL of the newly created paste"
 // @Success      200  {object}  service.PastePermissionResponse  "Successfully gave permission"
 // @Failure      404  {object}  ErrorResponse "Not found"
-// @Failure 429 {object} ErrorResponse "Too many requests, rate limit exceeded"
+// @Failure      429 {object} ErrorResponse "Too many requests, rate limit exceeded"
 // @Failure      500  {object}  ErrorResponse "Internal server error"
-// @Router       /api/v1/pastes/{id}/permission/{user_id} [put]
+// @Router       /api/v1/pastes/{id}/permission/{userLogin} [put]
 func (h *Handler) PermissionHandler(w http.ResponseWriter, r *http.Request) {
 	pasteId, err := helpers.ReadIDParam(r)
 	if err != nil {
@@ -289,19 +288,29 @@ func (h *Handler) PermissionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userIdStr := chi.URLParam(r, "user_id")
-	userId, err := strconv.ParseInt(userIdStr, 10, 64)
-	if err != nil || userId <= 0 {
+	userLogin := chi.URLParam(r, "userLogin")
+	v := validator.New()
+	service.ValidateLogin(v, userLogin)
+	if !v.Valid() {
 		h.NotFoundResponse(w, r)
 		return
 	}
 
-	resp, err := h.services.Pastes.GivePermission(uint16(pasteId), userId)
+	resp, err := h.services.Pastes.GivePermission(uint16(pasteId), userLogin)
+	if err != nil {
+		switch {
+		case errors.Is(err, repository.ErrUserNotFound):
+			h.NotFoundResponse(w, r)
+		default:
+			h.ServerErrorResponse(w, r, err)
+		}
+		return
+	}
 
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("api/v1/pastes/%d", pasteId))
 
-	err = helpers.WriteJSON(w, http.StatusOK, helpers.Envelope{"permission": resp}, headers)
+	err = helpers.WriteJSON(w, http.StatusOK, resp, headers)
 	if err != nil {
 		h.ServerErrorResponse(w, r, err)
 	}

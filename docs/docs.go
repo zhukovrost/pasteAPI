@@ -375,7 +375,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/pastes/{id}/permission/{user_id}": {
+        "/api/v1/pastes/{id}/permission/{userLogin}": {
             "put": {
                 "security": [
                     {
@@ -400,9 +400,9 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "User ID",
-                        "name": "user_id",
+                        "name": "userLogin",
                         "in": "path",
                         "required": true
                     }

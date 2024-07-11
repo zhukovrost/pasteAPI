@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/zhukovrost/pasteAPI/pkg/postgres"
+	"strings"
 	"time"
 )
 
@@ -10,7 +11,34 @@ type PermissionModel struct {
 	DB postgres.Database
 }
 
-func (m *PermissionModel) SetWritePermission(userId int64, pasteId uint16) error {
+func (m *PermissionModel) SetWritePermissionByLogin(userLogin string, pasteId uint16) (int64, error) {
+	query := `
+        INSERT INTO write_permissions (user_id, paste_id)
+		VALUES (
+			(SELECT id FROM users WHERE login = $1),
+			$2
+		)
+		RETURNING user_id;`
+
+	var userId int64
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, userLogin, pasteId).Scan(&userId)
+	if err != nil {
+		switch {
+		case strings.HasPrefix(err.Error(), "pq: null value in column"):
+			return 0, ErrUserNotFound
+		default:
+			return 0, err
+		}
+	}
+
+	return userId, nil
+}
+
+func (m *PermissionModel) SetWritePermissionById(userId int64, pasteId uint16) error {
 	query := `
         INSERT INTO write_permissions (user_id, paste_id)
         VALUES ($1, $2)`

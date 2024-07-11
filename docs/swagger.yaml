@@ -406,7 +406,7 @@ paths:
       summary: Update the paste
       tags:
       - pastes
-  /api/v1/pastes/{id}/permission/{user_id}:
+  /api/v1/pastes/{id}/permission/{userLogin}:
     put:
       description: Gives a permission to user in the url to update / delete paste
         in the url.
@@ -418,9 +418,9 @@ paths:
         type: integer
       - description: User ID
         in: path
-        name: user_id
+        name: userLogin
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:

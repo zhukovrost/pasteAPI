@@ -54,7 +54,7 @@ func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err = h.services.Users.Register(user); err != nil {
 		switch {
-		case errors.Is(err, repository.ErrDuplicate):
+		case errors.Is(err, repository.ErrDuplicateUser):
 			v.AddError("user", "a user with this email/login already exists")
 			h.FailedValidationResponse(w, r, v.Errors)
 		default:

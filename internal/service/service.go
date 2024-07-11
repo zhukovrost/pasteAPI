@@ -24,7 +24,7 @@ type Pastes interface {
 	Create(paste *models.Paste, creator *models.User) error
 	GetPasteForUpdate(pasteId uint16, in UpdatePasteInput) (*models.Paste, error)
 	Update(paste *models.Paste) error
-	GivePermission(pasteId uint16, userId int64) (*PastePermissionResponse, error)
+	GivePermission(pasteId uint16, userLogin string) (*PastePermissionResponse, error)
 }
 
 type Users interface {

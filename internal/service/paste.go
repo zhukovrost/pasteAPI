@@ -169,7 +169,7 @@ func (s *PasteService) Create(paste *models.Paste, creator *models.User) error {
 
 	if !creator.IsAnonymous() {
 		paste.CanEdit = true
-		err = s.permissionsRepo.SetWritePermission(creator.ID, paste.Id)
+		err = s.permissionsRepo.SetWritePermissionById(creator.ID, paste.Id)
 		if err != nil {
 			return err
 		}
@@ -237,11 +237,12 @@ func (s *PasteService) Update(paste *models.Paste) error {
 	return nil
 }
 
-func (s *PasteService) GivePermission(pasteId uint16, userId int64) (*PastePermissionResponse, error) {
-	if err := s.permissionsRepo.SetWritePermission(userId, pasteId); err != nil {
+func (s *PasteService) GivePermission(pasteId uint16, userLogin string) (*PastePermissionResponse, error) {
+	id, err := s.permissionsRepo.SetWritePermissionByLogin(userLogin, pasteId)
+	if err != nil {
 		return nil, err
 	}
-	return &PastePermissionResponse{Permission: models.Permission{PasteId: pasteId, UserId: userId}}, nil
+	return &PastePermissionResponse{Permission: models.Permission{PasteId: pasteId, UserId: id}}, nil
 }
 
 func (s *PasteService) setCanEdit(paste *models.Paste, user *models.User) error {
