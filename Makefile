@@ -108,21 +108,13 @@ build/api: # build/docs
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 	go build -ldflags=${linker_flags} -o=./bin/api ./cmd/api
 
-## build/compose: build and deploy using Docker Compose
-.PHONY: build/compose
-build/compose: # dev/services/stop
-	@echo 'Composing down...'
-	-docker compose down
-	@echo 'Composing up...'
-	docker compose up --build
-
 ## build/image: build Docker image for the application
 .PHONY: build/image
 build/image:
 	@echo 'Building image...'
 	-docker compose down
 	-docker rmi pasteapi 2>/dev/null || true
-	docker build -t pasteapi .
+	docker build -t zhukovrost/pasteapi:${VERSION} .
 
 ## build/docs: generate API documentation using Swagger
 .PHONY: build/docs

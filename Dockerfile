@@ -1,5 +1,5 @@
 # Start with a stage for dependencies
-FROM golang:1.22-alpine3.18 as modules
+FROM golang:1.22-alpine3.18 AS modules
 
 # Copy dependencies list to modules directory
 COPY go.mod go.sum /modules/
@@ -11,7 +11,7 @@ WORKDIR /modules
 RUN go mod download
 
 # Start with the official Go image as a base image
-FROM golang:1.22-alpine as builder
+FROM golang:1.22-alpine AS builder
 
 # Copy cached modules from the previous stage
 COPY --from=modules /go/pkg /go/pkg
