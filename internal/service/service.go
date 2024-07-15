@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/sirupsen/logrus"
+	"github.com/zhukovrost/pasteAPI/internal/config"
 	"github.com/zhukovrost/pasteAPI/internal/repository"
 	"github.com/zhukovrost/pasteAPI/internal/repository/models"
 	"github.com/zhukovrost/pasteAPI/pkg/cache"
@@ -55,7 +56,7 @@ type Config struct {
 		Enabled bool
 	}
 	CORS struct {
-		TrustedOrigins []string
+		TrustedOrigins config.StringSlice
 	}
 	BuildTime string
 	Version   string

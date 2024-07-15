@@ -15,7 +15,7 @@ func NewRouter(handler *v1.Handler) http.Handler {
 	r.NotFound(handler.NotFoundResponse)
 
 	r.Get("/api/debug/vars", expvar.Handler().ServeHTTP)
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
+	r.Get("/api/swagger/*", httpSwagger.WrapHandler)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/healthcheck", handler.HealthcheckHandler)

@@ -87,7 +87,7 @@ func Run(cfg *config.Config) {
 				Burst   int
 				Enabled bool
 			}(cfg.Limiter),
-			CORS:      struct{ TrustedOrigins []string }(cfg.CORS),
+			CORS:      struct{ TrustedOrigins config.StringSlice }{TrustedOrigins: cfg.CORS.TrustedOrigins},
 			BuildTime: config.BuildTime,
 			Version:   config.Version,
 		},

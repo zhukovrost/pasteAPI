@@ -16,6 +16,13 @@ var (
 	ErrDisplayAndExit = errors.New("display Version and exit")
 )
 
+type StringSlice []string
+
+func (s *StringSlice) Decode(value string) error {
+	*s = strings.Split(value, ",")
+	return nil
+}
+
 type Config struct {
 	Host           string `yaml:"host" envconfig:"ADDRESS"`
 	Port           int    `yaml:"port" envconfig:"PORT"`
@@ -38,7 +45,7 @@ type Config struct {
 		NeedDebug bool `yaml:"need_debug" envconfig:"API_LOGGER_DEBUG"`
 	} `yaml:"logger"`
 	CORS struct {
-		TrustedOrigins []string `yaml:"trustedOrigins" envconfig:"PASTE_TRUSTED_ORIGINS"`
+		TrustedOrigins StringSlice `yaml:"trustedOrigins" envconfig:"PASTE_TRUSTED_ORIGINS"`
 	} `yaml:"cors"`
 	Redis struct {
 		Host       string `yaml:"host" envconfig:"PASTE_REDIS_ADDRESS"`
