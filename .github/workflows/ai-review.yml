@@ -42,7 +42,7 @@ jobs:
       - name: Run AI review
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-flash-latest' }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
         run: |
           set -euo pipefail
           "$RUNNER_TEMP/ai-review" \

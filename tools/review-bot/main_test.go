@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 type fakeReviewer struct {
@@ -108,6 +109,7 @@ func TestInvalidJSONFallback(t *testing.T) {
 }
 
 func TestModelErrorFallback(t *testing.T) {
+	fastRetries(t)
 	diffPath, instr := setup(t, makeDiff(1, 2))
 	fake := &fakeReviewer{err: errors.New("timeout")}
 
@@ -118,6 +120,45 @@ func TestModelErrorFallback(t *testing.T) {
 	if !strings.Contains(md, "модель недоступна") {
 		t.Fatalf("unexpected result: %s", md)
 	}
+	if fake.calls != modelAttempts {
+		t.Fatalf("expected %d attempts, got %d", modelAttempts, fake.calls)
+	}
+}
+
+type flakyReviewer struct {
+	calls int
+}
+
+func (f *flakyReviewer) Review(_ context.Context, _, _ string) (string, error) {
+	f.calls++
+	if f.calls < modelAttempts {
+		return "", errors.New("504 deadline exceeded")
+	}
+	return `{"comments":[]}`, nil
+}
+
+func TestRetryRecoversAfterTransientError(t *testing.T) {
+	fastRetries(t)
+	diffPath, instr := setup(t, makeDiff(1, 2))
+	fake := &flakyReviewer{}
+
+	md, err := Execute(diffPath, instr, "test", fake, "key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fake.calls != modelAttempts {
+		t.Fatalf("expected %d attempts, got %d", modelAttempts, fake.calls)
+	}
+	if !strings.Contains(md, "Замечаний не найдено") {
+		t.Fatalf("unexpected result: %s", md)
+	}
+}
+
+func fastRetries(t *testing.T) {
+	t.Helper()
+	orig := retryBackoff
+	retryBackoff = []time.Duration{0, 0}
+	t.Cleanup(func() { retryBackoff = orig })
 }
 
 func TestMissingAPIKeyFallback(t *testing.T) {

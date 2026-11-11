@@ -17,8 +17,11 @@ const (
 	maxComments    = 20
 	maxFileBytes   = 30000
 	maxPromptBytes = 120000
-	requestTimeout = 120 * time.Second
+	requestTimeout = 240 * time.Second
+	modelAttempts  = 3
 )
+
+var retryBackoff = []time.Duration{3 * time.Second, 10 * time.Second}
 
 // Comment — одно замечание модели.
 type Comment struct {
@@ -46,7 +49,9 @@ func main() {
 	}
 
 	apiKey := os.Getenv("GEMINI_API_KEY")
-	model := envOr("GEMINI_MODEL", "gemini-flash-latest")
+	model := envOr("GEMINI_MODEL", "gemini-3.8-flash")
+
+	log.Printf("start: model=%s, timeout=%s, attempts=%d, thinking=off", model, requestTimeout, modelAttempts)
 
 	markdown, err := Execute(*diffPath, *instructionsPath, model, nil, apiKey)
 	if err != nil {
@@ -72,9 +77,11 @@ func Execute(diffPath, instructionsPath, model string, reviewer Reviewer, apiKey
 	log.Printf("diff: %d files, +%d/-%d lines, ignored %d", stats.Files, stats.Added, stats.Removed, len(ignored))
 
 	if stats.Files == 0 {
+		log.Print("stop: no reviewable changes after filtering")
 		return "Нет текстовых изменений для ревью после исключений.", nil
 	}
 	if TooLarge(stats, maxLines, maxFiles) {
+		log.Printf("stop: diff too large (%d lines, %d files)", stats.Changed, stats.Files)
 		return renderSkipped(stats), nil
 	}
 
@@ -85,6 +92,7 @@ func Execute(diffPath, instructionsPath, model string, reviewer Reviewer, apiKey
 	if strings.TrimSpace(string(checklist)) == "" {
 		return "", fmt.Errorf("review instructions are empty")
 	}
+	log.Printf("instructions: %d bytes", len(checklist))
 
 	files := make([]DiffFile, 0, len(kept))
 	for _, f := range kept {
@@ -93,13 +101,16 @@ func Execute(diffPath, instructionsPath, model string, reviewer Reviewer, apiKey
 
 	systemPrompt := BuildSystemPrompt(string(checklist))
 	userPrompt := BuildUserPrompt(files, stats, maxPromptBytes)
+	log.Printf("prompt: system=%d bytes, user=%d bytes", len(systemPrompt), len(userPrompt))
 
 	if reviewer == nil {
 		if strings.TrimSpace(apiKey) == "" {
+			log.Print("stop: GEMINI_API_KEY is empty")
 			return renderFailure("не настроен GEMINI_API_KEY", apiKey), nil
 		}
 		r, err := NewGeminiReviewer(apiKey, model)
 		if err != nil {
+			log.Printf("create gemini client: %v", err)
 			return renderFailure("не удалось создать клиента модели: "+err.Error(), apiKey), nil
 		}
 		reviewer = r
@@ -108,20 +119,52 @@ func Execute(diffPath, instructionsPath, model string, reviewer Reviewer, apiKey
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 
-	rawOut, err := reviewer.Review(ctx, systemPrompt, userPrompt)
+	rawOut, err := reviewWithRetry(ctx, reviewer, systemPrompt, userPrompt)
 	if err != nil {
-		log.Printf("model error: %v", err)
+		log.Printf("stop: model failed: %v", err)
 		return renderFailure("модель недоступна: "+err.Error(), apiKey), nil
 	}
+	log.Printf("model response: %d bytes", len(rawOut))
 
 	result, err := parseReview(rawOut)
 	if err != nil {
-		log.Printf("invalid model output: %v", err)
+		log.Printf("stop: invalid model output: %v", err)
 		return renderFailure("модель вернула невалидный JSON", apiKey), nil
 	}
+	log.Printf("parsed comments: %d", len(result.Comments))
 
 	result = normalizeResult(result, kept)
+	log.Printf("comments after normalization: %d", len(result.Comments))
 	return renderReview(result, stats), nil
+}
+
+// reviewWithRetry делает несколько попыток с паузами между ними.
+func reviewWithRetry(ctx context.Context, r Reviewer, systemPrompt, userPrompt string) (string, error) {
+	var lastErr error
+	for attempt := 1; attempt <= modelAttempts; attempt++ {
+		start := time.Now()
+		out, err := r.Review(ctx, systemPrompt, userPrompt)
+		elapsed := time.Since(start).Round(time.Millisecond)
+		if err == nil {
+			log.Printf("model attempt %d/%d: ok in %s", attempt, modelAttempts, elapsed)
+			return out, nil
+		}
+
+		lastErr = err
+		log.Printf("model attempt %d/%d: failed in %s: %v", attempt, modelAttempts, elapsed, err)
+		if attempt == modelAttempts {
+			break
+		}
+
+		delay := retryBackoff[min(attempt-1, len(retryBackoff)-1)]
+		log.Printf("retrying in %s", delay)
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-time.After(delay):
+		}
+	}
+	return "", lastErr
 }
 
 func parseReview(raw string) (ReviewResult, error) {
