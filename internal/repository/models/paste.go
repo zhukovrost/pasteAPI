@@ -15,3 +15,10 @@ type Paste struct {
 	Version   uint32    `json:"version"`
 	CanEdit   bool      `json:"can_edit"`
 }
+
+// PasteHistoryEntry — одна версия пасты в истории изменений.
+type PasteHistoryEntry struct {
+	Version   uint32    `json:"version"`
+	Title     string    `json:"title"`
+	CreatedAt time.Time `json:"created_at"`
+}

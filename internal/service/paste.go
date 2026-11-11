@@ -29,15 +29,17 @@ func searchKey(settings SearchSettings) string {
 type PasteService struct {
 	repo            repository.Pastes
 	permissionsRepo repository.Permissions
+	attachments     repository.Attachments
 	cache           cache.Cache
 	log             *logrus.Logger
 	wg              *sync.WaitGroup
 }
 
-func newPasteService(repo repository.Pastes, permissionsRepo repository.Permissions, log *logrus.Logger, cache cache.Cache, wg *sync.WaitGroup) *PasteService {
+func newPasteService(repo repository.Pastes, permissionsRepo repository.Permissions, attachments repository.Attachments, log *logrus.Logger, cache cache.Cache, wg *sync.WaitGroup) *PasteService {
 	return &PasteService{
 		repo:            repo,
 		permissionsRepo: permissionsRepo,
+		attachments:     attachments,
 		log:             log,
 		cache:           cache,
 		wg:              wg,
