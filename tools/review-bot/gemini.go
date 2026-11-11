@@ -36,7 +36,6 @@ func (g *GeminiReviewer) Review(ctx context.Context, systemPrompt, userPrompt st
 		ResponseSchema:    reviewSchema(),
 		Temperature:       genai.Ptr[float32](0.1),
 		MaxOutputTokens:   4096,
-		ThinkingConfig:    &genai.ThinkingConfig{ThinkingBudget: genai.Ptr[int32](0)},
 	})
 	if err != nil {
 		return "", err

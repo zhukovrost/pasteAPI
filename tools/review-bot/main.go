@@ -18,10 +18,7 @@ const (
 	maxFileBytes   = 30000
 	maxPromptBytes = 120000
 	requestTimeout = 240 * time.Second
-	modelAttempts  = 3
 )
-
-var retryBackoff = []time.Duration{3 * time.Second, 10 * time.Second}
 
 // Comment — одно замечание модели.
 type Comment struct {
@@ -51,7 +48,7 @@ func main() {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	model := envOr("GEMINI_MODEL", "gemini-3.8-flash")
 
-	log.Printf("start: model=%s, timeout=%s, attempts=%d, thinking=off", model, requestTimeout, modelAttempts)
+	log.Printf("start: model=%s, timeout=%s", model, requestTimeout)
 
 	markdown, err := Execute(*diffPath, *instructionsPath, model, nil, apiKey)
 	if err != nil {
@@ -119,7 +116,9 @@ func Execute(diffPath, instructionsPath, model string, reviewer Reviewer, apiKey
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 
-	rawOut, err := reviewWithRetry(ctx, reviewer, systemPrompt, userPrompt)
+	start := time.Now()
+	rawOut, err := reviewer.Review(ctx, systemPrompt, userPrompt)
+	log.Printf("model call finished in %s", time.Since(start).Round(time.Millisecond))
 	if err != nil {
 		log.Printf("stop: model failed: %v", err)
 		return renderFailure("модель недоступна: "+err.Error(), apiKey), nil
@@ -136,35 +135,6 @@ func Execute(diffPath, instructionsPath, model string, reviewer Reviewer, apiKey
 	result = normalizeResult(result, kept)
 	log.Printf("comments after normalization: %d", len(result.Comments))
 	return renderReview(result, stats), nil
-}
-
-// reviewWithRetry делает несколько попыток с паузами между ними.
-func reviewWithRetry(ctx context.Context, r Reviewer, systemPrompt, userPrompt string) (string, error) {
-	var lastErr error
-	for attempt := 1; attempt <= modelAttempts; attempt++ {
-		start := time.Now()
-		out, err := r.Review(ctx, systemPrompt, userPrompt)
-		elapsed := time.Since(start).Round(time.Millisecond)
-		if err == nil {
-			log.Printf("model attempt %d/%d: ok in %s", attempt, modelAttempts, elapsed)
-			return out, nil
-		}
-
-		lastErr = err
-		log.Printf("model attempt %d/%d: failed in %s: %v", attempt, modelAttempts, elapsed, err)
-		if attempt == modelAttempts {
-			break
-		}
-
-		delay := retryBackoff[min(attempt-1, len(retryBackoff)-1)]
-		log.Printf("retrying in %s", delay)
-		select {
-		case <-ctx.Done():
-			return "", ctx.Err()
-		case <-time.After(delay):
-		}
-	}
-	return "", lastErr
 }
 
 func parseReview(raw string) (ReviewResult, error) {
