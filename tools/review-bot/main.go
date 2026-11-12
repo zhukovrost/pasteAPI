@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -121,14 +122,18 @@ func Execute(diffPath, instructionsPath, model string, reviewer Reviewer, apiKey
 	log.Printf("model call finished in %s", time.Since(start).Round(time.Millisecond))
 	if err != nil {
 		log.Printf("stop: model failed: %v", err)
+		if errors.Is(err, errTruncated) {
+			return renderFailure("ответ модели обрезан по лимиту токенов (MAX_TOKENS) — уменьшите размер PR или diff-файла", apiKey), nil
+		}
 		return renderFailure("модель недоступна: "+err.Error(), apiKey), nil
 	}
 	log.Printf("model response: %d bytes", len(rawOut))
+	logRawResponse(rawOut)
 
 	result, err := parseReview(rawOut)
 	if err != nil {
 		log.Printf("stop: invalid model output: %v", err)
-		return renderFailure("модель вернула невалидный JSON", apiKey), nil
+		return renderFailure("модель вернула невалидный JSON (возможен обрыв ответа по лимиту токенов)", apiKey), nil
 	}
 	log.Printf("parsed comments: %d", len(result.Comments))
 
@@ -256,6 +261,20 @@ func sanitize(s, secret string) string {
 		s = string(runes[:500]) + "…"
 	}
 	return s
+}
+
+// logRawResponse печатает сырой ответ модели, чтобы в CI было видно,
+// что именно вернула модель при ошибке парсинга.
+func logRawResponse(raw string) {
+	log.Printf("raw model response:\n%s", truncateRunes(raw, 20000))
+}
+
+func truncateRunes(s string, limit int) string {
+	runes := []rune(s)
+	if len(runes) <= limit {
+		return s
+	}
+	return string(runes[:limit]) + "\n… (truncated)"
 }
 
 func envOr(name, fallback string) string {
