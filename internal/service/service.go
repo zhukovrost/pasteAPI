@@ -26,6 +26,19 @@ type Pastes interface {
 	GetPasteForUpdate(pasteId uint16, in UpdatePasteInput) (*models.Paste, error)
 	Update(paste *models.Paste) error
 	GivePermission(pasteId uint16, userLogin string) (*PastePermissionResponse, error)
+
+	SearchPastes(title string) ([]*models.Paste, error)
+	SearchPastesSafe(title, sort string) ([]*models.Paste, error)
+	GetRawPaste(id int64, user *models.User) (string, error)
+	IncrementPasteViews(id int64) (int64, error)
+	GetPasteHistory(id int64) ([]*models.PasteHistoryEntry, error)
+	CreatePastesBatch(inputs []CreatePasteInput, user *models.User) (int, error)
+	CreateCategory(name string) error
+	ModeratePaste(id int64) (string, error)
+	FetchLinkPreview(target string) (string, error)
+	FetchLinkPreviewSafe(target string) (string, error)
+	DownloadAttachment(name string) ([]byte, error)
+	DeleteAttachment(name string) error
 }
 
 type Users interface {
@@ -35,6 +48,7 @@ type Users interface {
 	ActivationRequest(user *models.User) error
 	UpdatePassword(token, newPassword string) error
 	ResetPasswordRequest(email string) error
+	CheckLegacyPassword(login, password string) (bool, error)
 }
 
 type emails interface {
@@ -78,6 +92,7 @@ func New(cfg Config, deps Dependencies) *Services {
 		Pastes: newPasteService(
 			deps.Models.Pastes,
 			deps.Models.Permissions,
+			deps.Models.Attachments,
 			deps.Logger,
 			deps.Cache,
 			deps.Wg,

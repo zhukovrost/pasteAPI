@@ -23,6 +23,9 @@ func NewRouter(handler *v1.Handler) http.Handler {
 		r.Route("/pastes", func(r chi.Router) {
 			r.Get("/", handler.ListPastesHandler)
 			r.Post("/", handler.CreatePasteHandler)
+			r.Get("/search", handler.SearchPastesHandler)
+			r.Get("/search/safe", handler.SafeSearchPastesHandler)
+			r.Post("/batch", handler.BatchCreatePastesHandler)
 
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", handler.GetPasteHandler)
@@ -30,8 +33,27 @@ func NewRouter(handler *v1.Handler) http.Handler {
 				r.Patch("/", handler.RequireAllowedToWriteUser(handler.UpdatePasteHandler))
 
 				r.Put("/permission/{userLogin}", handler.RequireAllowedToWriteUser(handler.PermissionHandler))
+
+				r.Get("/raw", handler.RequireAuthenticatedUser(handler.RawPasteHandler))
+				r.Get("/views", handler.PasteViewsHandler)
+				r.Get("/history", handler.PasteHistoryHandler)
+				r.Post("/moderate", handler.ModeratePasteHandler)
 			})
 		})
+
+		r.Route("/categories", func(r chi.Router) {
+			r.Post("/", handler.CreateCategoryHandler)
+		})
+
+		r.Get("/link-preview", handler.LinkPreviewHandler)
+		r.Get("/link-preview/safe", handler.SafeLinkPreviewHandler)
+
+		r.Route("/attachments", func(r chi.Router) {
+			r.Get("/", handler.DownloadAttachmentHandler)
+			r.Delete("/", handler.DeleteAttachmentHandler)
+		})
+
+		r.Get("/public-config", handler.PublicConfigHandler)
 
 		r.Route("/users", func(r chi.Router) {
 			r.Post("/", handler.RegisterUserHandler)
@@ -39,6 +61,7 @@ func NewRouter(handler *v1.Handler) http.Handler {
 			r.Put("/password", handler.UpdatePasswordHandler)
 			r.Post("/activation-email", handler.RequireAuthenticatedUser(handler.ResendActivationEmail))
 			r.Get("/", handler.RequireAuthenticatedUser(handler.GetLoggedUserData))
+			r.Post("/legacy-password-check", handler.LegacyPasswordCheckHandler)
 		})
 
 		r.Route("/tokens", func(r chi.Router) {
