@@ -17,7 +17,7 @@
 
 ## Warning (severity: warning)
 
-6. **Проигнорированная ошибка** от БД, HTTP-запроса, `json.Decode`, `rows.Close`.
+6. **Проигнорированная ошибка** от БД, HTTP-запроса или `json.Decode`.
 7. **HTTP-клиент без таймаута** (`http.Get`, `http.DefaultClient`) или без проверки статуса.
 
 ## Что НЕ надо сообщать
