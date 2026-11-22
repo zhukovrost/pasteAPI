@@ -80,14 +80,14 @@ func TestNoReviewableChanges(t *testing.T) {
 func TestRendersComments(t *testing.T) {
 	diffPath, instr := setup(t, makeDiff(1, 2))
 	fake := &fakeReviewer{out: "```json\n" +
-		`{"comments":[{"file":"file000.go","severity":"critical","message":"bad SQL","reason":"#1"}]}` +
+		`{"comments":[{"file":"file000.go","line":12,"code":"query := \"SELECT * FROM pastes\"","severity":"critical","message":"bad SQL","reason":"#1"}]}` +
 		"\n```"}
 
 	md, err := Execute(diffPath, instr, "test", fake, "key")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"[error] file000.go", "bad SQL", "#1"} {
+	for _, want := range []string{"[error] file000.go:12", "bad SQL", "#1", "SELECT * FROM pastes"} {
 		if !strings.Contains(md, want) {
 			t.Fatalf("expected %q in output:\n%s", want, md)
 		}
@@ -137,7 +137,33 @@ func TestMissingAPIKeyFallback(t *testing.T) {
 
 func TestDropsUnknownFiles(t *testing.T) {
 	diffPath, instr := setup(t, makeDiff(1, 2))
-	fake := &fakeReviewer{out: `{"comments":[{"file":"other.go","severity":"error","message":"made up","reason":"x"}]}`}
+	fake := &fakeReviewer{out: `{"comments":[{"file":"other.go","line":1,"code":"x","severity":"error","message":"made up","reason":"x"}]}`}
+
+	md, err := Execute(diffPath, instr, "test", fake, "key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(md, "Замечаний не найдено") {
+		t.Fatalf("unexpected result: %s", md)
+	}
+}
+
+func TestDropsCommentWithoutLine(t *testing.T) {
+	diffPath, instr := setup(t, makeDiff(1, 2))
+	fake := &fakeReviewer{out: `{"comments":[{"file":"file000.go","line":0,"code":"x","severity":"error","message":"bad","reason":"#1"}]}`}
+
+	md, err := Execute(diffPath, instr, "test", fake, "key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(md, "Замечаний не найдено") {
+		t.Fatalf("unexpected result: %s", md)
+	}
+}
+
+func TestDropsInfoSeverity(t *testing.T) {
+	diffPath, instr := setup(t, makeDiff(1, 2))
+	fake := &fakeReviewer{out: `{"comments":[{"file":"file000.go","line":1,"code":"x","severity":"info","message":"style","reason":"#1"}]}`}
 
 	md, err := Execute(diffPath, instr, "test", fake, "key")
 	if err != nil {

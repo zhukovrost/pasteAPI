@@ -18,12 +18,15 @@ const (
 	maxComments    = 20
 	maxFileBytes   = 30000
 	maxPromptBytes = 120000
+	maxCodeLength  = 200
 	requestTimeout = 240 * time.Second
 )
 
 // Comment — одно замечание модели.
 type Comment struct {
 	File     string `json:"file"`
+	Line     int    `json:"line"`
+	Code     string `json:"code"`
 	Severity string `json:"severity"`
 	Message  string `json:"message"`
 	Reason   string `json:"reason"`
@@ -179,13 +182,17 @@ func normalizeResult(r ReviewResult, files []DiffFile) ReviewResult {
 	for _, c := range r.Comments {
 		c.File = normalizePath(c.File, allowed)
 		c.Severity = normalizeSeverity(c.Severity)
+		c.Code = truncateRunes(strings.TrimSpace(c.Code), maxCodeLength)
 		c.Message = strings.TrimSpace(c.Message)
 		c.Reason = strings.TrimSpace(c.Reason)
 
 		if c.File == "" || c.Message == "" || c.Severity == "" || !allowed[c.File] {
 			continue
 		}
-		key := c.File + "|" + c.Severity + "|" + c.Message
+		if c.Line <= 0 || c.Code == "" {
+			continue
+		}
+		key := fmt.Sprintf("%s|%d|%s|%s", c.File, c.Line, c.Severity, c.Message)
 		if seen[key] {
 			continue
 		}
@@ -219,8 +226,6 @@ func normalizeSeverity(s string) string {
 		return "error"
 	case "warning", "warn":
 		return "warning"
-	case "info", "suggestion", "note", "style":
-		return "info"
 	default:
 		return ""
 	}
@@ -236,8 +241,9 @@ func renderReview(r ReviewResult, stats DiffStats) string {
 	}
 
 	for _, c := range r.Comments {
-		fmt.Fprintf(&b, "\n### [%s] %s\n\n**Проблема:** %s\n\n**Почему:** %s\n",
-			c.Severity, c.File, c.Message, c.Reason)
+		fmt.Fprintf(&b, "\n### [%s] %s:%d\n\n", c.Severity, c.File, c.Line)
+		fmt.Fprintf(&b, "**Код:**\n\n```\n%s\n```\n\n", c.Code)
+		fmt.Fprintf(&b, "**Проблема:** %s\n\n**Почему:** %s\n", c.Message, c.Reason)
 	}
 	return b.String()
 }

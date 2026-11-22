@@ -104,19 +104,21 @@ const systemPromptTemplate = `Ты — senior Go-разработчик и secur
 3. Не выдумывай проблем, которые нельзя подтвердить по diff.
 4. Корректный параметризованный SQL ($1, $2) — не инъекция.
 5. file указывай ровно как в diff, без префиксов a/ и b/.
-6. severity: error, warning или info. Максимум 20 комментариев.
+6. line — номер строки в новой версии файла. Считай его по заголовку @@ -a,b +c,d @@ и строкам с +.
+7. code — точная строка или фрагмент из diff, где проблема, до 200 символов.
+8. severity — только error или warning. Максимум 20 комментариев.
 
 Формат ответа — строго один JSON-объект:
-{"comments":[{"file":"path.go","severity":"error","message":"...","reason":"..."}]}
+{"comments":[{"file":"path.go","line":42,"code":"query := ...","severity":"error","message":"...","reason":"..."}]}
 
 Требования к ответу:
 - Ничего кроме JSON: без markdown, без ` + "```json" + `, без текста до и после объекта.
-- message — только суть проблемы, до 200 символов. Не цитируй diff и не пересказывай код.
+- line и code обязательны: замечание без строки и фрагмента кода не принимается.
+- message — только суть проблемы, до 200 символов, без общих слов.
 - reason — номер пункта чек-листа и риск, до 150 символов, одной фразой.
 - Не повторяй одно и то же замечание дважды.
 - Если проблем нет — {"comments":[]}.
 - JSON должен быть синтаксически полным: закрывай все строки, объекты и массивы.`
-
 
 func BuildSystemPrompt(checklist string) string {
 	return strings.Replace(systemPromptTemplate, "{{CHECKLIST}}", strings.TrimSpace(checklist), 1)
@@ -159,15 +161,24 @@ func reviewSchema() *genai.Schema {
 							Type:        genai.TypeString,
 							Description: "Путь ровно как в diff, без префиксов a/ и b/.",
 						},
+						"line": {
+							Type:        genai.TypeInteger,
+							Description: "Номер строки в новой версии файла (по заголовку @@ и строкам с +).",
+						},
+						"code": {
+							Type:        genai.TypeString,
+							MaxLength:   genai.Ptr[int64](200),
+							Description: "Точная строка или фрагмент кода из diff, где проблема.",
+						},
 						"severity": {
 							Type:        genai.TypeString,
-							Enum:        []string{"error", "warning", "info"},
-							Description: "error — блокирует мерж, warning — вероятная проблема, info — стиль.",
+							Enum:        []string{"error", "warning"},
+							Description: "error — блокирует мерж, warning — вероятная проблема.",
 						},
 						"message": {
 							Type:        genai.TypeString,
 							MaxLength:   genai.Ptr[int64](200),
-							Description: "Суть проблемы без цитирования кода, до 200 символов.",
+							Description: "Суть проблемы без общих слов, до 200 символов.",
 						},
 						"reason": {
 							Type:        genai.TypeString,
@@ -175,7 +186,7 @@ func reviewSchema() *genai.Schema {
 							Description: "Номер пункта чек-листа и риск, одной фразой до 150 символов.",
 						},
 					},
-					Required: []string{"file", "severity", "message", "reason"},
+					Required: []string{"file", "line", "code", "severity", "message", "reason"},
 				},
 			},
 		},
